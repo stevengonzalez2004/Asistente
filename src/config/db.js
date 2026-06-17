@@ -1,19 +1,19 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Configuración adaptada para Neon usando Connection String
 const poolConfig = {
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'asistente_financiero',
-    password: process.env.DB_PASSWORD || 'jeremyjose2016',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false // Obligatorio para conexiones a Neon
+    }
 };
 
 const pool = new Pool(poolConfig);
 
 // Eventos del pool
 pool.on('connect', () => {
-    console.log('Conexión con PostgreSQL establecida correctamente.');
+    console.log('Conexión con PostgreSQL (Neon) establecida correctamente.');
 });
 
 pool.on('error', (err) => {
