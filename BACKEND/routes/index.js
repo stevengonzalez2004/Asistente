@@ -14,11 +14,11 @@ router.use('/api/reportes', reportesRoutes);
 
 // Ruta de estado general
 router.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    timestamp: new Date().toISOString(),
-    status: 'UP'
-  });
+    res.status(200).json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        status: 'UP'
+    });
 });
 
 module.exports = router;

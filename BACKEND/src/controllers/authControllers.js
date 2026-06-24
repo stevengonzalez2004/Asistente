@@ -7,7 +7,7 @@ const usuariosModel = require('../models/usuariosModel');
 // ==========================================
 // LOGIN 
 // ==========================================
-exports.login = async (req, res, next) => {
+exports.login = async(req, res, next) => {
     try {
         const { correo, password } = req.body;
 
@@ -26,7 +26,7 @@ exports.login = async (req, res, next) => {
 
         const payload = { id: usuario.id, correo: usuario.correo };
         const secret = process.env.JWT_SECRET || 'asistente-financiero-secret-2026';
-    
+
         const token = jwt.sign(payload, secret, { expiresIn: '4h' });
 
         res.status(200).json({
@@ -36,14 +36,14 @@ exports.login = async (req, res, next) => {
         });
 
     } catch (error) {
-        next(error); 
+        next(error);
     }
 };
 
 // ==========================================
 // REGISTRO 
 // ==========================================
-exports.registroPublico = async (req, res, next) => {
+exports.registroPublico = async(req, res, next) => {
     try {
 
         const { nombre, correo, password } = req.body;
