@@ -57,7 +57,7 @@ class MovimientosService {
         // --- Validación de saldo ---
         if (validarSaldo && !data.forzar && (tipo.toUpperCase() === 'GASTO' || tipo.toUpperCase() === 'TRANSFERENCIA')) {
             const cuentaObj = await movimientosModel.obtenerOCrearCuenta(cuentaOrigenNorm, usuario.id);
-            const saldoActual = parseFloat(cuentaObj ? .saldo_actual || 0);
+            const saldoActual = parseFloat(cuentaObj.saldo_actual || 0);
             const montoFloat = parseFloat(monto);
 
             if (saldoActual < montoFloat) {

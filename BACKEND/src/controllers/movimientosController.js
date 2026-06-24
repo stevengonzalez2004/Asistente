@@ -19,7 +19,7 @@ class MovimientosController {
                 metodo_pago
             } = req.body;
 
-            const usuarioId = req.usuario ? .id || null;
+            const usuarioId = req.usuario.id || null;
 
             if (!tipo || !monto) {
                 return res.status(400).json({
@@ -42,7 +42,7 @@ class MovimientosController {
                 metodo_pago
             });
 
-            if (result ? .status === 'SALDO_INSUFICIENTE') {
+            if (result.status === 'SALDO_INSUFICIENTE') {
                 return res.status(400).json({
                     success: false,
                     message: `No tienes saldo suficiente en ${result.cuenta}. Faltan $${result.faltante.toFixed(2)}.`,
@@ -66,7 +66,7 @@ class MovimientosController {
     async crearCuenta(req, res, next) {
         try {
             const { nombre } = req.body;
-            const usuarioId = req.usuario ? .id || null;
+            const usuarioId = req.usuario.id || null;
 
             if (!nombre || !usuarioId) {
                 return res.status(400).json({
@@ -92,7 +92,7 @@ class MovimientosController {
     async obtenerCuentas(req, res, next) {
         try {
             const { telegram_id } = req.query;
-            const usuarioId = req.usuario ? .id || null;
+            const usuarioId = req.usuario.id || null;
             const identificador = usuarioId || telegram_id;
 
             if (!identificador) {

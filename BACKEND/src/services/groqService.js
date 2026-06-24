@@ -46,8 +46,8 @@ class GroqService {
 
             return response.data;
         } catch (error) {
-            const errorMsg = error.response ?.data ?.error ?.message || error.message;
-            logger.error('Error en la API de Groq Chat Completions:', error.response ?.data || error);
+            const errorMsg = error.response.data.error.message || error.message;
+            logger.error('Error en la API de Groq Chat Completions:', error.response.data || error);
             throw new Error(`Error al conectar con la IA de Groq: ${errorMsg}`);
         }
     }
@@ -84,8 +84,8 @@ class GroqService {
 
             return response.data; // { text: "..." }
         } catch (error) {
-            const errorMsg = error.response ?.data ?.error ?.message || error.message;
-            logger.error('Error en la API de Groq Whisper:', error.response ?. data || error);
+            const errorMsg = error.response.data.error.message || error.message;
+            logger.error('Error en la API de Groq Whisper:', error.response.data || error);
             throw new Error(`Error en transcripción Whisper: ${errorMsg}`);
         }
     }

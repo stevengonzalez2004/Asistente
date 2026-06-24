@@ -133,7 +133,7 @@ class MovimientosModel {
             let categoriaId = null;
             if (categoria) {
                 const catObj = await this.obtenerOCrearCategoria(categoria, usuario_id);
-                categoriaId = catObj ? .id;
+                categoriaId = catObj.id;
             }
 
             // 3. Obtener o crear Cuentas
@@ -147,8 +147,8 @@ class MovimientosModel {
                 cuentaDestinoObj = await this.obtenerOCrearCuenta(cuenta_destino, usuario_id);
             }
 
-            const cuentaOrigenId = cuentaOrigenObj ? .id || null;
-            const cuentaDestinoId = cuentaDestinoObj ? .id || null;
+            const cuentaOrigenId = cuentaOrigenObj.id || null;
+            const cuentaDestinoId = cuentaDestinoObj.id || null;
 
             // 4. Insertar Movimiento
             const resMov = await client.query(queries.insertarMovimiento, [
@@ -209,7 +209,7 @@ class MovimientosModel {
      */
     async obtenerBalanceTotal(usuarioId) {
         const res = await db.query(queries.obtenerBalanceGeneral, [usuarioId]);
-        return parseFloat(res.rows[0] ? .balance_total || 0);
+        return parseFloat(res.rows[0].balance_total || 0);
     }
 
     /**

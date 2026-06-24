@@ -3,24 +3,29 @@
         <div>
             <p class="eyebrow">Panel financiero</p>
             <h1>Hola, {{ user?.nombre || 'Usuario' }}</h1>
+            <p class="subtext">Controla tus ingresos, gastos y cuentas desde un solo lugar.</p>
         </div>
         <button class="ghost-btn" (click)="logout()">Cerrar sesión</button>
     </header>
 
     <section class="summary-grid">
         <article class="card highlight">
-            <p>Balance</p>
+            <div class="card-icon">💰</div>
+            <p>Balance total</p>
             <strong>{{ summary.balance | currency:'USD':'symbol':'1.2-2' }}</strong>
         </article>
         <article class="card">
+            <div class="card-icon">⬆️</div>
             <p>Ingresos</p>
             <strong>{{ summary.ingresos | currency:'USD':'symbol':'1.2-2' }}</strong>
         </article>
         <article class="card">
+            <div class="card-icon">⬇️</div>
             <p>Gastos</p>
             <strong>{{ summary.gastos | currency:'USD':'symbol':'1.2-2' }}</strong>
         </article>
         <article class="card">
+            <div class="card-icon">🧾</div>
             <p>Movimientos</p>
             <strong>{{ summary.totalMovimientos }}</strong>
         </article>
@@ -28,21 +33,30 @@
 
     <section class="content-grid">
         <div class="panel">
-            <h2>Cuentas</h2>
+            <div class="panel-title-row">
+                <h2>Cuentas</h2>
+                <span class="pill">{{ accounts.length }} registradas</span>
+            </div>
             <form [formGroup]="accountForm" (ngSubmit)="addAccount()" class="inline-form">
                 <input formControlName="nombre" placeholder="Nueva cuenta" />
-                <button type="submit">Agregar</button>
+                <button type="submit" [disabled]="loading">Agregar</button>
             </form>
             <ul class="list">
-                <li *ngFor="let account of accounts">
-                    <span>{{ account.nombre }}</span>
+                <li *ngFor="let account of accounts" class="account-item">
+                    <div>
+                        <span class="account-name">{{ account.nombre }}</span>
+                        <small>Cuenta disponible</small>
+                    </div>
                     <strong>{{ account.saldo_actual | currency:'USD':'symbol':'1.2-2' }}</strong>
                 </li>
             </ul>
         </div>
 
         <div class="panel">
-            <h2>Registrar movimiento</h2>
+            <div class="panel-title-row">
+                <h2>Registrar movimiento</h2>
+                <span class="pill accent">Rápido</span>
+            </div>
             <form [formGroup]="form" (ngSubmit)="addMovement()" class="stack-form">
                 <div *ngIf="feedback" class="feedback" [ngClass]="feedback.type">
                     {{ feedback.message }}
@@ -68,7 +82,10 @@
     </section>
 
     <section class="panel">
-        <h2>Últimos movimientos</h2>
+        <div class="panel-title-row">
+            <h2>Últimos movimientos</h2>
+            <span class="pill">Hoy</span>
+        </div>
         <ul class="table-list">
             <li *ngFor="let movement of movements" class="table-row">
                 <div>

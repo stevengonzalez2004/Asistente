@@ -1,60 +1,111 @@
 .dashboard-shell {
     min-height: 100vh;
-    padding: 24px;
-    background: linear-gradient(135deg, #f5f8fc, #e9f1ff);
-    color: #122033
+    padding: 28px;
+    background: linear-gradient(135deg, #f4f8ff 0%, #eef4ff 45%, #f8fbff 100%);
+    color: #14213d;
+    font-family: Inter, 'Segoe UI', sans-serif;
 }
 
 .topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px
+    margin-bottom: 24px;
+    gap: 16px;
 }
 
 .topbar h1 {
-    margin: 4px 0 0
+    margin: 6px 0 4px;
+    font-size: 28px;
+}
+
+.eyebrow {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5570a6;
+}
+
+.subtext {
+    margin: 0;
+    color: #5e6f8f;
 }
 
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
-    margin-bottom: 20px
+    margin-bottom: 20px;
 }
 
 .card,
 .panel {
     background: #fff;
-    border-radius: 20px;
+    border-radius: 22px;
     padding: 18px;
-    box-shadow: 0 10px 25px rgba(15, 33, 53, .08)
+    box-shadow: 0 14px 35px rgba(20, 33, 61, 0.08);
+    border: 1px solid #e8eefc;
 }
 
 .card.highlight {
-    background: linear-gradient(135deg, #0f4c81, #4da3ff)
+    background: linear-gradient(135deg, #1746a2, #3f8cff);
 }
 
 .card.highlight p,
 .card.highlight strong {
-    color: #fff
+    color: #fff;
+}
+
+.card-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
 }
 
 .content-grid {
     display: grid;
     grid-template-columns: 1.1fr .9fr;
     gap: 16px;
-    margin-bottom: 20px
+    margin-bottom: 20px;
 }
 
 .inline-form,
 .stack-form {
     display: grid;
-    gap: 10px
+    gap: 12px;
 }
 
 .inline-form {
-    grid-template-columns: 1fr auto
+    grid-template-columns: 1fr auto;
+}
+
+.panel-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.panel h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f0f5ff;
+    color: #3d66b8;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.pill.accent {
+    background: #e9f8ee;
+    color: #1b7f45;
 }
 
 .list,
@@ -63,67 +114,79 @@
     padding: 0;
     margin: 0;
     display: grid;
-    gap: 10px
+    gap: 10px;
 }
 
-.list li,
+.account-item,
 .table-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #e7edf5
+    padding: 12px 0;
+    border-bottom: 1px solid #eef2f8;
+}
+
+.account-item div,
+.table-row div {
+    display: grid;
+    gap: 4px;
+}
+
+.account-name {
+    font-weight: 700;
 }
 
 .ghost-btn {
     padding: 10px 14px;
     border-radius: 999px;
-    background: #122033;
+    background: #14213d;
     color: #fff;
     border: none;
-    cursor: pointer
+    cursor: pointer;
+    transition: transform 0.2s ease;
 }
 
-.table-row div {
-    display: grid;
-    gap: 4px
+.ghost-btn:hover {
+    transform: translateY(-1px);
 }
 
 .amount {
-    text-align: right
+    text-align: right;
 }
 
 .positive {
-    color: #1e9d5a
+    color: #1e9d5a;
+    font-weight: 700;
 }
 
 .negative {
-    color: #d24f4f
+    color: #d24f4f;
+    font-weight: 700;
 }
 
 .feedback {
     padding: 10px 12px;
     border-radius: 12px;
     font-size: 14px;
-    margin-bottom: 6px
+    margin-bottom: 6px;
 }
 
 .feedback.success {
-    background: #e9f9ef;
-    color: #167a3b;
-    border: 1px solid #bfe4c8
+    background: #eafbf1;
+    color: #187a40;
+    border: 1px solid #bfe8cc;
 }
 
 .feedback.error {
     background: #fff1f1;
     color: #b42318;
-    border: 1px solid #f3b8b8
+    border: 1px solid #f4c2c2;
 }
 
 .feedback.info {
     background: #eef4ff;
     color: #2354a6;
-    border: 1px solid #c6dcff
+    border: 1px solid #c9dcff;
 }
 
 input,
@@ -131,17 +194,32 @@ select,
 button {
     padding: 10px 12px;
     border-radius: 12px;
-    border: 1px solid #cfd8e3
+    border: 1px solid #cfd8e3;
+    background: #fff;
+    color: #14213d;
 }
 
-.button {
-    background: #0f4c81;
-    color: #fff
+.button,
+button[type="submit"] {
+    background: linear-gradient(135deg, #1746a2, #3f8cff);
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-@media (max-width:900px) {
+button[disabled] {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
     .summary-grid,
     .content-grid {
-        grid-template-columns: 1fr
+        grid-template-columns: 1fr;
+    }
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
