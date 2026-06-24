@@ -1,12 +1,14 @@
 const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcryptjs'); // Importado para encriptar la contraseña
 const logger = require('../utils/logger');
 const iaService = require('../services/iaService');
 const audioService = require('../services/audioService');
 const movimientosService = require('../services/movimientosService');
 const reportesService = require('../services/reportesService');
 const sessionService = require('../services/sessionService');
+const usuariosModel = require('../models/usuariosModel'); // Importado para guardar correo/password
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -24,14 +26,29 @@ logger.info('Bot de Telegram iniciado en modo Polling.');
 // Manejar comandos básicos como /start y /ayuda
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
+  const telegramId = msg.from.id;
   const nombre = msg.from.first_name || 'Usuario';
   const username = msg.from.username || '';
 
   try {
     // Buscar o registrar al usuario en la base de datos
-    await movimientosService.asegurarUsuario(msg.from.id, username, nombre).catch(() => {});
+    const usuario = await movimientosService.asegurarUsuario(telegramId, username, nombre);
 
-    const bienvenida = `👋 *¡Hola, ${nombre}! Bienvenido a tu Asistente Financiero Inteligente.*\n\n` +
+    // 1. Verificamos si ya tiene correo. Si NO tiene, iniciamos el registro web.
+    if (!usuario.correo) {
+      const msjRegistro = `👋 *¡Hola, ${nombre}! Bienvenido a tu Asistente Financiero Inteligente.*\n\n` +
+        `He creado tu perfil. Para que también puedas ver tus reportes gráficos en nuestra página web, vamos a vincular tu cuenta.\n\n` +
+        `📧 *Por favor, escribe tu correo electrónico:*`;
+      
+      await bot.sendMessage(chatId, msjRegistro, { parse_mode: 'Markdown' });
+      
+      // Guardamos en memoria que estamos esperando su correo
+      sessionService.setSession(telegramId, { estado: 'ESPERANDO_CORREO' });
+      return; // Detenemos la ejecución de /start aquí
+    }
+
+    // 2. Si ya tiene correo, le damos la bienvenida normal
+    const bienvenida = `👋 *¡Qué bueno verte de nuevo, ${nombre}! Bienvenido a tu Asistente Financiero.*\n\n` +
       `Puedo ayudarte a llevar el control de tus finanzas personales de forma rápida mediante texto o notas de voz.\n\n` +
       `*¿Qué puedes hacer?*\n` +
       `• 📝 *Registrar gastos*: _"Gasté $15 en hamburguesas con tarjeta"_, _"Pagué 40 de luz"_\n` +
@@ -93,18 +110,15 @@ bot.on('message', async (msg) => {
       await bot.sendChatAction(chatId, 'upload_document');
       logger.info(`Recibida nota de voz de ${nombre} (${telegramId})`);
       
-      // Descargar audio
       const fileId = msg.voice.file_id;
       const tempDir = path.join(__dirname, '../../temp');
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      // Descargar el archivo a la carpeta temp
       const localFilePath = await bot.downloadFile(fileId, tempDir);
       
       await bot.sendChatAction(chatId, 'typing');
-      // Transcribir con Whisper
       textoParaAnalizar = await audioService.procesarYTranscribir(localFilePath);
       
       await bot.sendMessage(chatId, `🎙️ _Transcribiendo voz:_ "${textoParaAnalizar}"`, { parse_mode: 'Markdown' });
@@ -116,12 +130,52 @@ bot.on('message', async (msg) => {
   } else if (msg.text) {
     textoParaAnalizar = msg.text;
   } else {
-    // Si no es texto ni voz, ignorar
     return;
   }
 
   // 2. Verificar si hay un flujo conversacional interactivo pendiente
   const session = sessionService.getSession(telegramId);
+
+  // --- FLUJO 2.A: REGISTRO WEB (CORREO Y PASSWORD) ---
+  if (session && session.estado === 'ESPERANDO_CORREO') {
+    const correo = textoParaAnalizar.trim();
+    
+    if (!correo.includes('@') || !correo.includes('.')) {
+      return bot.sendMessage(chatId, '⚠️ Ese no parece un correo válido. Por favor, intenta de nuevo:');
+    }
+
+    sessionService.setSession(telegramId, { estado: 'ESPERANDO_PASSWORD', correo: correo });
+    return bot.sendMessage(chatId, '¡Excelente! ✅\n\n🔒 Ahora, *escribe una contraseña* para tu cuenta web:\n_(Tranquilo, la guardaré encriptada y nadie más podrá verla)_', { parse_mode: 'Markdown' });
+  }
+
+  if (session && session.estado === 'ESPERANDO_PASSWORD') {
+    const password = textoParaAnalizar.trim();
+    const correoGuardado = session.correo;
+
+    try {
+      const salt = bcrypt.genSaltSync(10);
+      const hashPassword = bcrypt.hashSync(password, salt);
+
+      await usuariosModel.VincularCuentaWeb(telegramId, correoGuardado, hashPassword);
+
+      sessionService.clearSession(telegramId);
+      
+      const exito = `🎉 *¡Cuenta web vinculada con éxito!*\n\n` +
+                    `Ya puedes ir a la página web e iniciar sesión con tu correo. A partir de ahora, cualquier gasto que me digas por aquí se reflejará en la web automáticamente.\n\n` +
+                    `Escribe /ayuda si quieres ver cómo registrar un movimiento.`;
+      return bot.sendMessage(chatId, exito, { parse_mode: 'Markdown' });
+    } catch (error) {
+      if (error.code === '23505') {
+        sessionService.clearSession(telegramId);
+        return bot.sendMessage(chatId, '❌ Hubo un problema: Ese correo ya está registrado en nuestro sistema. Usa /start para volver a intentar.');
+      }
+      logger.error('Error al guardar credenciales:', error);
+      sessionService.clearSession(telegramId);
+      return bot.sendMessage(chatId, 'Ocurrió un error al guardar tus datos. Inténtalo más tarde.');
+    }
+  }
+
+  // --- FLUJO 2.B: RESOLUCIÓN DE FONDOS ---
   if (session && session.estado === 'ESPERANDO_ORIGEN_FONDOS') {
     try {
       await bot.sendChatAction(chatId, 'typing');
@@ -298,7 +352,7 @@ async function ejecutarResolucionFondos(chatId, telegramUser, session, procedenc
 
   try {
     if (tipo_procedencia === 'INGRESO') {
-      // 1. Registrar ingreso de los fondos faltantes en la cuenta de destino (la que tiene déficit)
+      // 1. Registrar ingreso de los fondos faltantes
       await movimientosService.registrarMovimiento({
         telegram_id,
         username,
@@ -309,13 +363,13 @@ async function ejecutarResolucionFondos(chatId, telegramUser, session, procedenc
         cuenta_origen: cuentaDestino,
         cuenta_destino: cuentaDestino,
         descripcion: descripcion || 'Ingreso para cubrir saldo insuficiente',
-        forzar: true // Evitamos validaciones de saldo aquí
+        forzar: true
       });
 
-      // 2. Registrar el movimiento original (gasto o transferencia)
+      // 2. Registrar el movimiento original
       const resultOriginal = await movimientosService.registrarMovimiento({
         ...datosMovimiento,
-        forzar: true // Ahora sí forzamos, ya que acabamos de inyectar los fondos
+        forzar: true 
       });
 
       const m = resultOriginal.movimiento;
@@ -331,7 +385,7 @@ async function ejecutarResolucionFondos(chatId, telegramUser, session, procedenc
       await bot.sendMessage(chatId, msgConfirmacion, { parse_mode: 'Markdown' });
 
     } else if (tipo_procedencia === 'TRANSFERENCIA') {
-      // 1. Registrar transferencia del dinero faltante desde la cuenta_origen indicada hacia cuentaDestino
+      // 1. Registrar transferencia del dinero faltante
       const cuentaOrigenNorm = cuenta_origen || 'Banco';
       
       await movimientosService.registrarMovimiento({
@@ -366,7 +420,6 @@ async function ejecutarResolucionFondos(chatId, telegramUser, session, procedenc
 
     } else {
       // tipo_procedencia === 'FORZAR'
-      // Registrar el movimiento directamente
       const resultOriginal = await movimientosService.registrarMovimiento({
         ...datosMovimiento,
         forzar: true

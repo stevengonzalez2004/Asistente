@@ -34,6 +34,19 @@ class UsuariosModel {
         const resultado = await db.query(query, [nombre, correo, password]);
         return resultado.rows[0];
     }
+    /**
+     * Actualiza el correo y contraseña de un usuario creado vía Telegram.
+     */
+    async VincularCuentaWeb(telegramId, correo, passwordHash) {
+        const query = `
+            UPDATE usuarios 
+            SET correo = $1, password = $2 
+            WHERE telegram_id = $3 
+            RETURNING id, nombre, correo
+        `;
+        const resultado = await db.query(query, [correo, passwordHash, telegramId]);
+        return resultado.rows[0];
+    }
 }
 
 module.exports = new UsuariosModel();
