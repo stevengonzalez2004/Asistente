@@ -13,7 +13,8 @@ exports.verificarToken = (req, res, next) => {
 
     try {
         // 3. Desencriptar y verificar el token usando la firma secreta del .env
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        const secret = process.env.JWT_SECRET || 'asistente-financiero-secret-2026';
+        const payload = jwt.verify(token, secret);
         
         // 4. Inyectar los datos del usuario desencriptados en la petición (req)
         // El payload contiene lo que se puso en el controlador: { id, correo }

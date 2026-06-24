@@ -6,8 +6,9 @@ class MovimientosService {
    * Registra un movimiento financiero para un usuario.
    * @param {Object} data - Datos del movimiento (usuario_id, telegram_id, etc).
    */
-  async registrarMovimiento(data, validarSaldo = false) {
+  async registrarMovimiento(data, validarSaldo = true) {
     const {
+      usuario_id,
       telegram_id,
       username,
       nombre,
@@ -21,8 +22,8 @@ class MovimientosService {
     } = data;
 
     // 1. Validaciones básicas
-    if (!telegram_id) {
-      throw new Error('El ID de Telegram del usuario es requerido.');
+    if (!usuario_id && !telegram_id) {
+      throw new Error('Se requiere un usuario autenticado o un ID de Telegram.');
     }
     if (!tipo || !['INGRESO', 'GASTO', 'TRANSFERENCIA'].includes(tipo.toUpperCase())) {
       throw new Error(`Tipo de movimiento no válido: ${tipo}`);
@@ -32,7 +33,15 @@ class MovimientosService {
     }
 
     // 2. Buscar o crear el usuario en la BD
-    const usuario = await movimientosModel.buscarOCrearUsuario(telegram_id, username, nombre);
+    let usuario;
+    if (usuario_id) {
+      usuario = await movimientosModel.buscarUsuarioPorId(usuario_id);
+      if (!usuario) {
+        throw new Error('No se encontró el usuario autenticado.');
+      }
+    } else {
+      usuario = await movimientosModel.buscarOCrearUsuario(telegram_id, username, nombre);
+    }
     
     // 3. Normalizar cuentas por tipo
     let cuentaOrigenNorm = cuenta_origen;
@@ -46,7 +55,7 @@ class MovimientosService {
     }
 
     // --- Validación de saldo ---
-    if (validarSaldo && !data.forzar && (tipo === 'GASTO' || tipo === 'TRANSFERENCIA')) {
+    if (validarSaldo && !data.forzar && (tipo.toUpperCase() === 'GASTO' || tipo.toUpperCase() === 'TRANSFERENCIA')) {
       const cuentaObj = await movimientosModel.obtenerOCrearCuenta(cuentaOrigenNorm, usuario.id);
       const saldoActual = parseFloat(cuentaObj?.saldo_actual || 0);
       const montoFloat = parseFloat(monto);
@@ -85,6 +94,15 @@ class MovimientosService {
   }
 
   /**
+   * Crea una cuenta nueva para un usuario.
+   */
+  async crearCuenta(data) {
+    const { usuario_id, nombre } = data;
+    if (!usuario_id) throw new Error('Se requiere un usuario autenticado.');
+    return await movimientosModel.crearCuentaParaUsuario(nombre, usuario_id);
+  }
+
+  /**
    * Asegura la existencia de un usuario (y crea cuentas si no existen).
    * No registra ningún movimiento ficticio.
    */
@@ -96,9 +114,18 @@ class MovimientosService {
   /**
    * Obtiene las cuentas del usuario y sus saldos.
    */
-  async listarCuentasUsuario(telegramId) {
-    if (!telegramId) throw new Error('El ID de Telegram es requerido.');
-    const usuario = await movimientosModel.buscarOCrearUsuario(telegramId);
+  async listarCuentasUsuario(identificador) {
+    if (!identificador) throw new Error('Se requiere un identificador de usuario.');
+
+    let usuario = null;
+    if (typeof identificador === 'number' || /^\d+$/.test(String(identificador))) {
+      usuario = await movimientosModel.buscarUsuarioPorId(Number(identificador));
+    }
+
+    if (!usuario) {
+      usuario = await movimientosModel.buscarOCrearUsuario(identificador);
+    }
+
     const cuentas = await movimientosModel.listarCuentas(usuario.id);
     const balanceTotal = await movimientosModel.obtenerBalanceTotal(usuario.id);
     

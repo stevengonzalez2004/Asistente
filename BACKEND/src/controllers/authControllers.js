@@ -2,7 +2,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 // Asegúrate de tener estas funciones creadas en tu modelo
-const usuariosModel = require('../models/usuarios.models'); 
+const usuariosModel = require('../models/usuariosModel');
 
 // ==========================================
 // LOGIN 
@@ -25,8 +25,9 @@ exports.login = async (req, res, next) => {
         }
 
         const payload = { id: usuario.id, correo: usuario.correo };
+        const secret = process.env.JWT_SECRET || 'asistente-financiero-secret-2026';
     
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '4h' });
+        const token = jwt.sign(payload, secret, { expiresIn: '4h' });
 
         res.status(200).json({
             message: 'Login exitoso',

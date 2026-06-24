@@ -4,7 +4,7 @@ const router = express.Router();
 const reportesController = require('../controllers/reportesController');
 
 // 1. Importa el middleware de autenticación (el "guardia")
-const { verificarToken } = require('../middlewares/auth.middleware');
+const { verificarToken } = require('../middlewares/authMiddleware');
 
 // ==========================================
 // RUTAS PARA EL BOT DE TELEGRAM (Internas)

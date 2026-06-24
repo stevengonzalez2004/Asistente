@@ -39,6 +39,36 @@ class MovimientosModel {
   }
 
   /**
+   * Busca un usuario por su id interno.
+   */
+  async buscarUsuarioPorId(usuarioId) {
+    const res = await db.query(`
+      SELECT id, telegram_id, username, nombre, created_at
+      FROM usuarios
+      WHERE id = $1;
+    `, [usuarioId]);
+    return res.rows[0] || null;
+  }
+
+  /**
+   * Crea una cuenta para un usuario si no existe.
+   */
+  async crearCuentaParaUsuario(nombre, usuarioId) {
+    if (!nombre || !usuarioId) {
+      throw new Error('El nombre de la cuenta y el usuario son obligatorios.');
+    }
+
+    const nombreNormalizado = nombre.trim();
+    const resBusqueda = await db.query(queries.buscarCuentaPorNombreYUsuario, [nombreNormalizado, usuarioId]);
+    if (resBusqueda.rows.length > 0) {
+      return { cuenta: resBusqueda.rows[0], creado: false };
+    }
+
+    const resInsercion = await db.query(queries.insertarCuenta, [nombreNormalizado, usuarioId, 0.00]);
+    return { cuenta: resInsercion.rows[0], creado: true };
+  }
+
+  /**
    * Obtiene o crea una categoría si no existe.
    */
   async obtenerOCrearCategoria(nombre, usuarioId) {

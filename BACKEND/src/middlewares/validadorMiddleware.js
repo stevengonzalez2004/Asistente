@@ -38,7 +38,8 @@ const validarJWT = (req, res, next) => {
 
     try {
         // Verifica si el token es real y no ha expirado
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        const secret = process.env.JWT_SECRET || 'asistente-financiero-secret-2026';
+        const payload = jwt.verify(token, secret);
 
         // Guarda los datos del usuario en la request por si el controlador los necesita
         req.usuarioAutenticado = payload;
