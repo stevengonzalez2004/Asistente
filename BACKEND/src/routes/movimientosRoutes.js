@@ -12,4 +12,14 @@ router.post('/cuentas', verificarToken, movimientosController.crearCuenta);
 // GET /api/movimientos/cuentas - Listar las cuentas de un usuario con saldos
 router.get('/cuentas', verificarToken, movimientosController.obtenerCuentas);
 
+// PUT /api/movimientos/:id - Editar un movimiento existente (Angular)
+router.put('/:id', verificarToken, movimientosController.editarWeb);
+
+// DELETE /api/movimientos/:id - Eliminar un movimiento (Soft Delete)
+router.delete('/:id', verificarToken, movimientosController.eliminarWeb);
+// POST /api/movimientos - Registrar un nuevo movimiento
+router.post('/', verificarToken, movimientosController.registrar);
+
+// GET /api/movimientos - Listar el historial de movimientos (NUEVO)
+router.get('/', verificarToken, movimientosController.obtenerHistorialWeb);
 module.exports = router;

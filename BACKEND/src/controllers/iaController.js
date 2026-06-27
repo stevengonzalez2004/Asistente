@@ -1,3 +1,5 @@
+// src/controllers/ia.Controller.js
+
 const iaService = require('../services/iaService');
 
 class IaController {

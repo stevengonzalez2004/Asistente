@@ -1,3 +1,4 @@
+// src/middlewares/errorMiddleware.js
 const logger = require('../utils/logger');
 
 // Middleware para manejo de errores globales

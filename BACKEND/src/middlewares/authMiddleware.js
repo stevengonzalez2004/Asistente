@@ -12,18 +12,26 @@ exports.verificarToken = (req, res, next) => {
     }
 
     try {
-        // 3. Desencriptar y verificar el token usando la firma secreta del .env
+        // 3. Desencriptar y verificar el token usando la firma secreta
         const secret = process.env.JWT_SECRET || 'asistente-financiero-secret-2026';
         const payload = jwt.verify(token, secret);
 
         // 4. Inyectar los datos del usuario desencriptados en la petición (req)
-        // El payload contiene lo que se puso en el controlador: { id, correo }
         req.usuario = payload;
 
-        // 5. Dejar que la petición continúe hacia el controlador
+        // 5. Dejar que la petición continúe
         next();
     } catch (error) {
-        // Si el token fue modificado, es falso, o pasaron las 4 horas de expiración
+        // Si el token fue modificado, es falso, o expiró
         return res.status(403).json({ message: 'Token inválido o expirado.' });
     }
+}; // 🟢 Aquí debe cerrar verificarToken
+
+// 🟢 Esta función debe estar completamente fuera de la anterior
+exports.verificarAdmin = (req, res, next) => {
+    // Asumimos que verificarToken ya se ejecutó antes y req.usuario existe
+    if (req.usuario.rol !== 'ADMIN') {
+        return res.status(403).json({ message: 'Acceso denegado. Se requieren permisos de administrador.' });
+    }
+    next(); // Si es ADMIN, lo dejamos pasar
 };

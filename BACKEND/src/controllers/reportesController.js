@@ -1,3 +1,4 @@
+// src/controllers/reportesController.js
 const reportesService = require('../services/reportesService');
 const movimientosModel = require('../models/movimientosModel'); // Importado para extraer datos limpios para la Web
 
@@ -72,9 +73,9 @@ class ReportesController {
       const movimientos = await movimientosModel.obtenerResumenHoy(usuarioId);
 
       return res.status(200).json({
-        success: true,
-        movimientos: movimientos
-      });
+  success: true,
+  movimientos 
+});
     } catch (error) { next(error); }
   }
 
@@ -85,7 +86,7 @@ class ReportesController {
 
       return res.status(200).json({
         success: true,
-        movimientos: movimientos
+        movimientos
       });
     } catch (error) { next(error); }
   }
@@ -97,7 +98,7 @@ class ReportesController {
 
       return res.status(200).json({
         success: true,
-        categorias: categorias
+        categorias
       });
     } catch (error) { next(error); }
   }

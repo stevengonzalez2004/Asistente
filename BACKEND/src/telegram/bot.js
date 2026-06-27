@@ -9,7 +9,7 @@ const movimientosService = require('../services/movimientosService');
 const reportesService = require('../services/reportesService');
 const sessionService = require('../services/sessionService');
 const usuariosModel = require('../models/usuariosModel'); // Importado para guardar correo/password
-
+const db = require('../config/db');
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
 if (!token || token === 'TU_TELEGRAM_BOT_TOKEN') {
@@ -31,11 +31,15 @@ bot.onText(/\/start/, async (msg) => {
   const username = msg.from.username || '';
 
   try {
-    // Buscar o registrar al usuario en la base de datos
-    const usuario = await movimientosService.asegurarUsuario(telegramId, username, nombre);
+    // 1. Asegurar que el usuario exista en la BD (tu flujo normal)
+    await movimientosService.asegurarUsuario(telegramId, username, nombre).catch(() => {});
 
-    // 1. Verificamos si ya tiene correo. Si NO tiene, iniciamos el registro web.
-    if (!usuario.correo) {
+    // 2. 🔍 CONSULTA DE CONTROL: Traer el estado real y actualizado de sus credenciales web
+    const resDB = await db.query('SELECT id, correo FROM usuarios WHERE telegram_id = $1 AND deleted_at IS NULL', [telegramId]);
+    const usuario = resDB.rows[0];
+
+    // 3. Verificamos si ya tiene correo. Si NO tiene (o es un usuario nuevo), iniciamos el registro web.
+    if (!usuario || !usuario.correo) {
       const msjRegistro = `👋 *¡Hola, ${nombre}! Bienvenido a tu Asistente Financiero Inteligente.*\n\n` +
         `He creado tu perfil. Para que también puedas ver tus reportes gráficos en nuestra página web, vamos a vincular tu cuenta.\n\n` +
         `📧 *Por favor, escribe tu correo electrónico:*`;
@@ -44,10 +48,10 @@ bot.onText(/\/start/, async (msg) => {
       
       // Guardamos en memoria que estamos esperando su correo
       sessionService.setSession(telegramId, { estado: 'ESPERANDO_CORREO' });
-      return; // Detenemos la ejecución de /start aquí
+      return; // Detenemos la ejecución aquí para que no mande la bienvenida normal
     }
 
-    // 2. Si ya tiene correo, le damos la bienvenida normal
+    // 4. Si YA tiene correo registrado, se salta la entrevista y le da la bienvenida directa
     const bienvenida = `👋 *¡Qué bueno verte de nuevo, ${nombre}! Bienvenido a tu Asistente Financiero.*\n\n` +
       `Puedo ayudarte a llevar el control de tus finanzas personales de forma rápida mediante texto o notas de voz.\n\n` +
       `*¿Qué puedes hacer?*\n` +
