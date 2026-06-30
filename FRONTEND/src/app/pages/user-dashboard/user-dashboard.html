@@ -1,0 +1,197 @@
+<main class="user-shell">
+  <header class="topbar">
+    <div>
+      <p>{{ usuario()?.nombre || usuario()?.correo }}</p>
+      <h1>Mis finanzas</h1>
+    </div>
+    <button class="ghost-btn" type="button" (click)="cerrarSesion()">Salir</button>
+  </header>
+
+  @if (mensaje()) {
+    <p class="notice success">{{ mensaje() }}</p>
+  }
+  @if (error()) {
+    <p class="notice danger">{{ error() }}</p>
+  }
+
+  <nav class="navbar" aria-label="Secciones de usuario">
+    <button type="button" [class.active]="seccionActiva() === 'cuentas'" (click)="cambiarSeccion('cuentas')">
+      Cuentas
+    </button>
+    <button type="button" [class.active]="seccionActiva() === 'movimientos'" (click)="cambiarSeccion('movimientos')">
+      Historial
+    </button>
+    <button type="button" [class.active]="seccionActiva() === 'crear-cuenta'" (click)="cambiarSeccion('crear-cuenta')">
+      Crear cuenta
+    </button>
+    <button type="button" [class.active]="seccionActiva() === 'nuevo-movimiento'" (click)="cambiarSeccion('nuevo-movimiento')">
+      Nuevo movimiento
+    </button>
+  </nav>
+
+  <section class="metrics">
+    <article class="balance-card">
+      <span>Balance total</span>
+      <strong>${{ balanceTotal() | number: '1.2-2' }}</strong>
+    </article>
+    <article>
+      <span>Cuentas</span>
+      <strong>{{ totalCuentas() }}</strong>
+    </article>
+    <article>
+      <span>Movimientos</span>
+      <strong>{{ totalMovimientos() }}</strong>
+    </article>
+  </section>
+
+  @if (seccionActiva() === 'cuentas') {
+    <section class="panel-section">
+      <div class="section-title">
+        <h2>Mis cuentas</h2>
+        <button class="ghost-btn" type="button" (click)="cargarCuentas()">Recargar</button>
+      </div>
+
+      @if (cargando()) {
+        <p class="muted">Cargando cuentas...</p>
+      } @else {
+        <div class="accounts-grid">
+          @for (cuenta of cuentas(); track cuenta.nombre) {
+            <article class="account-card">
+              <span>{{ cuenta.nombre }}</span>
+              <strong [class.negative]="saldoCuenta(cuenta) < 0">${{ saldoCuenta(cuenta) | number: '1.2-2' }}</strong>
+            </article>
+          } @empty {
+            <p class="empty">Aun no tienes cuentas registradas.</p>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (seccionActiva() === 'movimientos') {
+    <section class="panel-section">
+      <div class="section-title">
+        <h2>Historial de movimientos</h2>
+        <button class="ghost-btn" type="button" (click)="cargarMovimientos()">Recargar</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Categoria</th>
+              <th>Origen</th>
+              <th>Destino</th>
+              <th>Monto</th>
+              <th>Descripcion</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (movimiento of movimientos(); track movimiento.id) {
+              <tr>
+                <td>{{ movimiento.fecha ? (movimiento.fecha | date: 'short') : '-' }}</td>
+                <td><span class="chip">{{ tipoMovimiento(movimiento) }}</span></td>
+                <td>{{ movimiento.categoria || '-' }}</td>
+                <td>{{ movimiento.cuenta_origen || '-' }}</td>
+                <td>{{ movimiento.cuenta_destino || '-' }}</td>
+                <td>${{ movimiento.monto | number: '1.2-2' }}</td>
+                <td>{{ movimiento.descripcion || '-' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty">No tienes movimientos registrados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (seccionActiva() === 'crear-cuenta') {
+    <section class="panel-section form-panel">
+      <h2>Crear cuenta</h2>
+      <form [formGroup]="cuentaForm" (ngSubmit)="crearCuenta()">
+        <label>
+          Nombre de la cuenta
+          <input formControlName="nombre" placeholder="Efectivo, Banco, Ahorros" />
+        </label>
+        <button type="submit" [disabled]="guardandoCuenta()">
+          {{ guardandoCuenta() ? 'Creando...' : 'Crear cuenta' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (seccionActiva() === 'nuevo-movimiento') {
+    <section class="panel-section form-panel">
+      <h2>Nuevo movimiento</h2>
+      <form class="movement-form" [formGroup]="movimientoForm" (ngSubmit)="registrarMovimiento()">
+        <label>
+          Tipo
+          <select formControlName="tipo">
+            <option value="INGRESO">Ingreso</option>
+            <option value="GASTO">Gasto</option>
+            <option value="TRANSFERENCIA">Transferencia</option>
+          </select>
+        </label>
+        <label>
+          Categoria
+          <input formControlName="categoria" placeholder="Comida, salario, servicios" />
+        </label>
+        <label>
+          Monto
+          <input type="number" min="0.01" step="0.01" formControlName="monto" />
+        </label>
+        <label>
+          Cuenta origen
+          <select formControlName="cuenta_origen">
+            <option value="">Selecciona una cuenta</option>
+            @for (cuenta of cuentas(); track cuenta.nombre) {
+              <option [value]="cuenta.nombre">{{ cuenta.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Cuenta destino
+          <select formControlName="cuenta_destino">
+            <option value="">Sin destino</option>
+            @for (cuenta of cuentas(); track cuenta.nombre) {
+              <option [value]="cuenta.nombre">{{ cuenta.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Metodo de pago
+          <input formControlName="metodo_pago" placeholder="EFECTIVO, TARJETA, TRANSFERENCIA" />
+        </label>
+        <label class="full">
+          Descripcion
+          <textarea rows="3" formControlName="descripcion"></textarea>
+        </label>
+        <button type="submit" [disabled]="guardandoMovimiento() || cuentas().length === 0">
+          {{ guardandoMovimiento() ? 'Registrando...' : 'Registrar movimiento' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  <section class="panel-section recent-section">
+    <div class="section-title">
+      <h2>Actividad reciente</h2>
+    </div>
+    <div class="recent-list">
+      @for (movimiento of ultimosMovimientos(); track movimiento.id) {
+        <article>
+          <span class="chip">{{ tipoMovimiento(movimiento) }}</span>
+          <strong>${{ movimiento.monto | number: '1.2-2' }}</strong>
+          <small>{{ movimiento.fecha ? (movimiento.fecha | date: 'short') : '-' }}</small>
+        </article>
+      } @empty {
+        <p class="empty">Tus ultimos movimientos apareceran aqui.</p>
+      }
+    </div>
+  </section>
+</main>

@@ -86,7 +86,7 @@ class UsuariosModel {
      * Lista todos los usuarios activos del sistema.
      */
     async ObtenerTodosLosUsuarios() {
-        const query = 'SELECT id, nombre, correo, rol, telegram_id FROM usuarios WHERE deleted_at IS NULL ORDER BY id ASC';
+        const query = 'SELECT id, nombre, correo, rol, telegram_id, deleted_at FROM usuarios WHERE deleted_at IS NULL ORDER BY id ASC';
         return await db.query(query);
     }
 
@@ -94,8 +94,58 @@ class UsuariosModel {
      * Obtiene la información de un usuario específico.
      */
     async ObtenerUsuarioPorId(id) {
-        const query = 'SELECT id, nombre, correo, rol, telegram_id FROM usuarios WHERE id = $1 AND deleted_at IS NULL';
+        const query = 'SELECT id, nombre, correo, rol, telegram_id, deleted_at FROM usuarios WHERE id = $1 AND deleted_at IS NULL';
         return await db.query(query, [id]);
+    }
+
+    async ObtenerUsuarioPorIdAdmin(id) {
+        const query = 'SELECT id, nombre, correo, rol, telegram_id, deleted_at FROM usuarios WHERE id = $1';
+        return await db.query(query, [id]);
+    }
+
+    async BuscarUsuariosPorCorreoAdmin(correo) {
+        const query = `
+            SELECT id, nombre, correo, rol, telegram_id, deleted_at
+            FROM usuarios
+            WHERE correo ILIKE $1
+            ORDER BY deleted_at IS NULL DESC, id ASC
+            LIMIT 50
+        `;
+        return await db.query(query, [`%${correo}%`]);
+    }
+
+    async ActualizarUsuarioAdmin(id, datos) {
+        const campos = [];
+        const valores = [];
+
+        if (datos.nombre !== undefined) {
+            valores.push(datos.nombre);
+            campos.push(`nombre = $${valores.length}`);
+        }
+
+        if (datos.correo !== undefined) {
+            valores.push(datos.correo);
+            campos.push(`correo = $${valores.length}`);
+        }
+
+        if (datos.password !== undefined) {
+            valores.push(datos.password);
+            campos.push(`password = $${valores.length}`);
+        }
+
+        if (campos.length === 0) {
+            return await this.ObtenerUsuarioPorId(id);
+        }
+
+        valores.push(id);
+        const query = `
+            UPDATE usuarios
+            SET ${campos.join(', ')}
+            WHERE id = $${valores.length} AND deleted_at IS NULL
+            RETURNING id, nombre, correo, rol, telegram_id
+        `;
+
+        return await db.query(query, valores);
     }
 
     /**

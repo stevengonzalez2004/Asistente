@@ -33,7 +33,7 @@ exports.verificarToken = (req, res, next) => {
 // 🟢 Esta función debe estar completamente fuera de la anterior
 exports.verificarAdmin = (req, res, next) => {
     // Asumimos que verificarToken ya se ejecutó antes y req.usuario existe
-    if (req.usuario.rol !== 'ADMIN') {
+    if (!['ADMIN', 'ADMINISTRADOR'].includes(req.usuario.rol)) {
         return res.status(403).json({ message: 'Acceso denegado. Se requieren permisos de administrador.' });
     }
     next(); // Si es ADMIN, lo dejamos pasar

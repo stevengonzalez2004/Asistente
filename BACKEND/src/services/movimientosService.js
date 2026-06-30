@@ -20,12 +20,13 @@ class MovimientosService {
             descripcion,
             metodo_pago
         } = data;
+        const tipoNormalizado = String(tipo || '').toUpperCase();
 
         // 1. Validaciones básicas
         if (!usuario_id && !telegram_id) {
             throw new Error('Se requiere un usuario autenticado o un ID de Telegram.');
         }
-        if (!tipo || !['INGRESO', 'GASTO', 'TRANSFERENCIA'].includes(tipo.toUpperCase())) {
+        if (!tipo || !['INGRESO', 'GASTO', 'TRANSFERENCIA'].includes(tipoNormalizado)) {
             throw new Error(`Tipo de movimiento no válido: ${tipo}`);
         }
         if (!monto || isNaN(monto) || parseFloat(monto) <= 0) {
@@ -47,15 +48,15 @@ class MovimientosService {
         let cuentaOrigenNorm = cuenta_origen;
         let cuentaDestinoNorm = cuenta_destino;
 
-        if (tipo === 'GASTO' && !cuentaOrigenNorm) {
+        if (tipoNormalizado === 'GASTO' && !cuentaOrigenNorm) {
             cuentaOrigenNorm = 'Efectivo'; // Fallback
-        } else if (tipo === 'INGRESO' && !cuentaOrigenNorm) {
+        } else if (tipoNormalizado === 'INGRESO' && !cuentaOrigenNorm) {
             // Usaremos cuenta_origen para registrar dónde entra el ingreso
             cuentaOrigenNorm = cuenta_destino || 'Efectivo';
         }
 
         // --- Validación de saldo ---
-        if (validarSaldo && !data.forzar && (tipo.toUpperCase() === 'GASTO' || tipo.toUpperCase() === 'TRANSFERENCIA')) {
+        if (validarSaldo && !data.forzar && (tipoNormalizado === 'GASTO' || tipoNormalizado === 'TRANSFERENCIA')) {
             const cuentaObj = await movimientosModel.obtenerOCrearCuenta(cuentaOrigenNorm, usuario.id);
             const saldoActual = parseFloat(cuentaObj.saldo_actual || 0);
             const montoFloat = parseFloat(monto);
@@ -74,13 +75,13 @@ class MovimientosService {
         // 4. Preparar payload para la BD
         const payload = {
             usuario_id: usuario.id,
-            tipo: tipo.toUpperCase(),
+            tipo: tipoNormalizado,
             categoria: categoria || 'Otros',
             monto: parseFloat(monto),
             cuenta_origen: cuentaOrigenNorm,
             cuenta_destino: cuentaDestinoNorm,
-            descripcion: descripcion || (tipo === 'TRANSFERENCIA' ? `Transferencia a ${cuentaDestinoNorm}` : `Movimiento de ${categoria || 'Otros'}`),
-            metodo_pago: metodo_pago || (tipo === 'TRANSFERENCIA' ? 'TRANSFERENCIA' : 'EFECTIVO')
+            descripcion: descripcion || (tipoNormalizado === 'TRANSFERENCIA' ? `Transferencia a ${cuentaDestinoNorm}` : `Movimiento de ${categoria || 'Otros'}`),
+            metodo_pago: metodo_pago || (tipoNormalizado === 'TRANSFERENCIA' ? 'TRANSFERENCIA' : 'EFECTIVO')
         };
 
         logger.debug('Registrando movimiento con payload:', payload);

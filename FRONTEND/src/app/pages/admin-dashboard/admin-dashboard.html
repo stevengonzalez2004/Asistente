@@ -1,0 +1,273 @@
+<main class="admin-shell" (click)="limpiarAvisos()">
+  <header class="topbar">
+    <div>
+      <p>Administrador</p>
+      <h1>Control financiero</h1>
+    </div>
+    <button class="ghost-btn" type="button" (click)="cerrarSesion()">Salir</button>
+  </header>
+
+  @if (mensaje()) {
+    <p class="notice success">{{ mensaje() }}</p>
+  }
+  @if (error()) {
+    <p class="notice danger">{{ error() }}</p>
+  }
+
+  <section class="metrics">
+    <article>
+      <span>Usuarios activos</span>
+      <strong>{{ usuarios().length }}</strong>
+    </article>
+    <article>
+      <span>Movimientos visibles</span>
+      <strong>{{ totalMovimientos() }}</strong>
+    </article>
+    <article>
+      <span>Balance visible</span>
+      <strong>${{ balanceGlobalVisible() | number: '1.2-2' }}</strong>
+    </article>
+  </section>
+
+  <section class="workspace">
+    <aside class="users-pane">
+      <div class="section-title">
+        <h2>Usuarios</h2>
+        <button type="button" class="icon-btn" title="Recargar usuarios" (click)="cargarUsuarios()">R</button>
+      </div>
+
+      <form class="search-form" [formGroup]="busquedaForm" (ngSubmit)="buscarUsuarios()">
+        <label>
+          Buscar por correo
+          <input type="email" formControlName="correo" placeholder="correo@dominio.com" />
+        </label>
+        <div class="search-actions">
+          <button type="submit" [disabled]="buscandoUsuarios()">
+            {{ buscandoUsuarios() ? 'Buscando...' : 'Buscar' }}
+          </button>
+          <button type="button" class="ghost-btn" (click)="limpiarBusqueda()">Limpiar</button>
+        </div>
+      </form>
+
+      @if (cargandoUsuarios()) {
+        <p class="muted">Cargando usuarios...</p>
+      }
+
+      <div class="user-list">
+        @for (usuario of usuarios(); track usuario.id) {
+          <button
+            type="button"
+            class="user-row"
+            [class.active]="usuarioSeleccionado()?.id === usuario.id"
+            [class.disabled-user]="usuarioDeshabilitado(usuario)"
+            (click)="seleccionarUsuario(usuario)"
+          >
+            <span class="user-name">
+              {{ usuario.nombre || 'Sin nombre' }}
+              @if (usuarioDeshabilitado(usuario)) {
+                <b>Deshabilitado</b>
+              }
+            </span>
+            <small>{{ usuario.correo }}</small>
+
+            @if (balanceUsuario(usuario); as balance) {
+              <strong class="user-balance">${{ balance.balance_total | number: '1.2-2' }}</strong>
+              <span class="account-preview">
+                @for (cuenta of balance.cuentas; track cuenta.nombre) {
+                  <em>{{ cuenta.nombre }}: ${{ cuenta.saldo_actual | number: '1.2-2' }}</em>
+                } @empty {
+                  <em>Sin cuentas</em>
+                }
+              </span>
+            } @else {
+              <span class="account-preview"><em>Cargando cuentas...</em></span>
+            }
+          </button>
+        }
+      </div>
+    </aside>
+
+    <section class="detail-pane">
+      @if (usuarioSeleccionado(); as usuario) {
+        <div class="detail-header">
+          <div>
+            <p>Usuario #{{ usuario.id }}</p>
+            <h2>
+              {{ usuario.nombre || usuario.correo }}
+              @if (usuarioDeshabilitado(usuario)) {
+                <span class="status-pill">Deshabilitado</span>
+              }
+            </h2>
+          </div>
+          <div class="detail-actions">
+            <button type="button" class="ghost-btn" (click)="cargarBalanceUsuario(usuario.id)">Recargar balance</button>
+            <button
+              class="danger-btn"
+              type="button"
+              [disabled]="usuarioDeshabilitado(usuario)"
+              (click)="deshabilitarUsuario(usuario)"
+            >
+              Deshabilitar
+            </button>
+          </div>
+        </div>
+
+        <nav class="section-nav" aria-label="Secciones de administracion">
+          <button
+            type="button"
+            [class.active]="seccionActiva() === 'balances'"
+            (click)="cambiarSeccion('balances')"
+          >
+            Cuentas y balances
+          </button>
+          <button
+            type="button"
+            [class.active]="seccionActiva() === 'movimientos'"
+            (click)="cambiarSeccion('movimientos')"
+          >
+            Movimientos
+          </button>
+          <button
+            type="button"
+            [class.active]="seccionActiva() === 'usuario'"
+            (click)="cambiarSeccion('usuario')"
+          >
+            Usuario
+          </button>
+        </nav>
+
+        @if (seccionActiva() === 'balances') {
+          <section class="panel-section">
+            <div class="balance-summary">
+              <span>Balance total</span>
+              <strong>${{ balanceTotalSeleccionado() | number: '1.2-2' }}</strong>
+            </div>
+
+            <div class="accounts-grid">
+              @for (cuenta of cuentasSeleccionadas(); track cuenta.nombre) {
+                <article class="account-card">
+                  <span>{{ cuenta.nombre }}</span>
+                  <strong [class.negative]="saldoCuenta(cuenta) < 0">${{ saldoCuenta(cuenta) | number: '1.2-2' }}</strong>
+                </article>
+              } @empty {
+                <p class="empty">Este usuario no tiene cuentas registradas.</p>
+              }
+            </div>
+          </section>
+        }
+
+        @if (seccionActiva() === 'movimientos') {
+          <section class="panel-section">
+            <div class="section-title movements-title">
+              <h2>Registros financieros</h2>
+              <button type="button" class="icon-btn" title="Recargar movimientos" (click)="cargarMovimientos(usuario.id)">R</button>
+            </div>
+
+            @if (cargandoMovimientos()) {
+              <p class="muted">Cargando movimientos...</p>
+            } @else {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Categoria</th>
+                      <th>Cuenta origen</th>
+                      <th>Cuenta destino</th>
+                      <th>Monto</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (movimiento of movimientos(); track movimiento.id) {
+                      <tr>
+                        <td>{{ movimiento.fecha ? (movimiento.fecha | date: 'short') : '-' }}</td>
+                        <td><span class="chip">{{ tipoMovimiento(movimiento) }}</span></td>
+                        <td>{{ movimiento.categoria || '-' }}</td>
+                        <td>{{ movimiento.cuenta_origen || '-' }}</td>
+                        <td>{{ movimiento.cuenta_destino || '-' }}</td>
+                        <td>${{ movimiento.monto | number: '1.2-2' }}</td>
+                        <td class="actions">
+                          <button type="button" class="ghost-btn" (click)="editarMovimiento(movimiento)">Editar</button>
+                          <button type="button" class="danger-btn" (click)="eliminarMovimiento(movimiento)">Eliminar</button>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="7" class="empty">Este usuario no tiene movimientos disponibles.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+        }
+
+        @if (seccionActiva() === 'usuario') {
+          <section class="panel-section">
+            <form class="edit-grid" [formGroup]="usuarioForm" (ngSubmit)="guardarUsuario()">
+              <label>
+                Nombre
+                <input formControlName="nombre" placeholder="Nombre del usuario" />
+              </label>
+              <label>
+                Correo
+                <input type="email" formControlName="correo" placeholder="correo@dominio.com" />
+              </label>
+              <label>
+                Nueva contrasena
+                <input type="password" formControlName="password" placeholder="Dejar vacio para no cambiar" />
+              </label>
+              <button type="submit">Guardar usuario</button>
+            </form>
+          </section>
+        }
+      } @else {
+        <p class="empty">Selecciona un usuario para administrar sus datos.</p>
+      }
+    </section>
+  </section>
+
+  @if (movimientoEditando(); as movimiento) {
+    <section class="modal-backdrop">
+      <form class="modal" [formGroup]="movimientoForm" (ngSubmit)="guardarMovimiento()">
+        <div class="section-title">
+          <h2>Editar movimiento #{{ movimiento.id }}</h2>
+          <button type="button" class="icon-btn" title="Cerrar" (click)="movimientoEditando.set(null)">X</button>
+        </div>
+
+        <label>
+          Categoria
+          <input formControlName="categoria" />
+        </label>
+        <label>
+          Monto
+          <input type="number" min="0.01" step="0.01" formControlName="monto" />
+        </label>
+        <label>
+          Cuenta origen
+          <input formControlName="cuenta_origen" />
+        </label>
+        <label>
+          Cuenta destino
+          <input formControlName="cuenta_destino" />
+        </label>
+        <label>
+          Metodo de pago
+          <input formControlName="metodo_pago" />
+        </label>
+        <label class="full">
+          Descripcion
+          <textarea rows="3" formControlName="descripcion"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" (click)="movimientoEditando.set(null)">Cancelar</button>
+          <button type="submit">Guardar movimiento</button>
+        </div>
+      </form>
+    </section>
+  }
+</main>
