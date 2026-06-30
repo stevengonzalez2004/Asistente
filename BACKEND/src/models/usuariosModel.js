@@ -2,6 +2,10 @@
 const db = require('../config/db');
 
 class UsuariosModel {
+    // ==========================================
+    // MÉTODOS DE AUTENTICACIÓN Y REGISTRO
+    // ==========================================
+
     /**
      * Busca un usuario delegando la consulta a fx_buscar_por_correo.
      */
@@ -28,6 +32,78 @@ class UsuariosModel {
         const query = 'SELECT * FROM fx_vincular_cuenta_web($1, $2, $3);';
         const resultado = await db.query(query, [telegramId, correo, passwordHash]);
         return resultado.rows[0];
+    }
+
+    // ==========================================
+    // MÉTODOS DE RECUPERACIÓN DE CONTRASEÑA
+    // ==========================================
+
+    /**
+     * Guarda el hash del código de recuperación y su fecha de expiración.
+     */
+    async GuardarCodigoRecuperacion(correo, codigoHasheado, expiracion) {
+        const query = 'UPDATE usuarios SET codigo_recuperacion = $1, codigo_expiracion = $2 WHERE correo = $3';
+        return await db.query(query, [codigoHasheado, expiracion, correo]);
+    }
+
+    /**
+     * Obtiene los datos de recuperación actuales del usuario.
+     */
+    async ObtenerDatosRecuperacion(correo) {
+        const query = 'SELECT codigo_recuperacion, codigo_expiracion, codigo_verificacion FROM usuarios WHERE correo = $1';
+        const res = await db.query(query, [correo]);
+        return res.rows[0];
+    }
+
+    /**
+     * Autoriza al usuario a cambiar su contraseña tras validar el código.
+     */
+    async MarcarCodigoVerificado(correo) {
+        const query = 'UPDATE usuarios SET codigo_verificacion = true WHERE correo = $1';
+        return await db.query(query, [correo]);
+    }
+
+    /**
+     * Guarda la nueva contraseña y limpia los campos temporales de recuperación.
+     */
+    async ActualizarPasswordYLimpiar(correo, nuevaPasswordHash) {
+        const query = `
+            UPDATE usuarios
+            SET password = $1,
+                codigo_recuperacion = NULL,
+                codigo_expiracion = NULL,
+                codigo_verificacion = false
+            WHERE correo = $2
+        `;
+        return await db.query(query, [nuevaPasswordHash, correo]);
+    }
+
+    // ==========================================
+    // MÉTODOS DE ADMINISTRACIÓN (Panel Web)
+    // ==========================================
+
+    /**
+     * Lista todos los usuarios activos del sistema.
+     */
+    async ObtenerTodosLosUsuarios() {
+        const query = 'SELECT id, nombre, correo, rol, telegram_id FROM usuarios WHERE deleted_at IS NULL ORDER BY id ASC';
+        return await db.query(query);
+    }
+
+    /**
+     * Obtiene la información de un usuario específico.
+     */
+    async ObtenerUsuarioPorId(id) {
+        const query = 'SELECT id, nombre, correo, rol, telegram_id FROM usuarios WHERE id = $1 AND deleted_at IS NULL';
+        return await db.query(query, [id]);
+    }
+
+    /**
+     * Realiza un borrado lógico (Soft Delete) del usuario.
+     */
+    async DeshabilitarUsuario(id) {
+        const query = 'UPDATE usuarios SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1';
+        return await db.query(query, [id]);
     }
 }
 

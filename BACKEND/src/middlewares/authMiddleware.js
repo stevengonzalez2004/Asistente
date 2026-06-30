@@ -13,7 +13,10 @@ exports.verificarToken = (req, res, next) => {
 
     try {
         // 3. Desencriptar y verificar el token usando la firma secreta
-        const secret = process.env.JWT_SECRET || 'asistente-financiero-secret-2026';
+        const secret = process.env.JWT_SECRET 
+        if (!secret) {
+    throw new Error('ERROR CRÍTICO: La variable JWT_SECRET no está definida en las variables de entorno.');
+}
         const payload = jwt.verify(token, secret);
 
         // 4. Inyectar los datos del usuario desencriptados en la petición (req)
