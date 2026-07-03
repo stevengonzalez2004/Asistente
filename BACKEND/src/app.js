@@ -3,12 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
-// 1. Importamos tus 5 archivos de rutas exactamente como se llaman en tu carpeta
-const authRoutes = require('./routes/authRoutes');
-const iaRoutes = require('./routes/iaRoutes');
-const movimientosRoutes = require('./routes/movimientosRoutes');
-const reportesRoutes = require('./routes/reportesRoutes');
-const usuariosRoutes = require('./routes/usuariosRoutes');
+// 1. Importamos el enrutador consolidado de la API (Director de Orquesta)
+const apiRoutes = require('./routes/index');
 
 const errorMiddleware = require('./middlewares/errorMiddleware');
 
@@ -35,12 +31,8 @@ app.get('/', (req, res) => {
     });
 });
 
-// 2. Conectamos cada archivo a su URL (¡Aquí ocurre la magia!)
-app.use('/api/auth', authRoutes);
-app.use('/api/ia', iaRoutes);
-app.use('/api/movimientos', movimientosRoutes);
-app.use('/api/reportes', reportesRoutes);
-app.use('/api/usuarios', usuariosRoutes);
+// 2. Conectamos el enrutador centralizado bajo el prefijo /api
+app.use('/api', apiRoutes);
 
 // Manejo de rutas inexistentes (404) 
 app.use((req, res, next) => {

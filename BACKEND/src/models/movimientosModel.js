@@ -1,15 +1,23 @@
+/**
+ * @file movimientosModel.js
+ * @description Capa de modelo de negocio para movimientos financieros, interactuando con la base de datos a través de consultas centralizadas.
+ */
+
 const db = require('../config/db');
 const logger = require('../utils/logger');
+const movimientosQueries = require('../queries/movimientosQueries');
 
 class MovimientosModel {
     /**
      * Busca un usuario por su telegram_id. Si no existe, delega su creación 
      * e inicialización completa a la función almacenada de Postgres.
+     * @param {string} telegramId ID de Telegram del usuario.
+     * @param {string} username Nombre de usuario de Telegram.
+     * @param {string} nombre Nombre visible del usuario.
      */
     async buscarOCrearUsuario(telegramId, username, nombre) {
         try {
-            const query = 'SELECT * FROM fx_buscar_o_crear_usuario($1, $2, $3);';
-            const res = await db.query(query, [telegramId, username, nombre]);
+            const res = await db.query(movimientosQueries.BUSCAR_O_CREAR_USUARIO, [telegramId, username, nombre]);
             return res.rows[0];
         } catch (error) {
             logger.error('Error al invocar fx_buscar_o_crear_usuario:', error);
@@ -19,18 +27,17 @@ class MovimientosModel {
 
     /**
      * Busca un usuario activo por su id interno de base de datos.
+     * @param {number} usuarioId ID interno de base de datos.
      */
     async buscarUsuarioPorId(usuarioId) {
-        const res = await db.query(`
-            SELECT id, telegram_id, username, nombre, correo, rol, created_at
-            FROM usuarios
-            WHERE id = $1 AND deleted_at IS NULL;
-        `, [usuarioId]);
+        const res = await db.query(movimientosQueries.BUSCAR_USUARIO_POR_ID, [usuarioId]);
         return res.rows[0] || null;
     }
 
     /**
      * Registra un movimiento financiero usando el esquema real de la tabla movimientos.
+     * Mantiene un control estricto de transacciones (BEGIN/COMMIT/ROLLBACK).
+     * @param {object} datos Datos del movimiento financiero a registrar.
      */
     async registrarMovimiento(datos) {
         const {
@@ -54,7 +61,7 @@ class MovimientosModel {
             const categoriaNombre = String(categoria || 'Otros').trim();
 
             const tipoRes = await client.query(
-                'SELECT id, nombre FROM tipos_movimiento WHERE UPPER(nombre) = $1 LIMIT 1;',
+                movimientosQueries.OBTENER_TIPO_MOVIMIENTO_POR_NOMBRE,
                 [tipoNormalizado]
             );
 
@@ -62,41 +69,32 @@ class MovimientosModel {
                 throw new Error(`Tipo de movimiento no válido: ${tipoNormalizado}`);
             }
 
-            let categoriaRes = await client.query(`
-                SELECT id, nombre
-                FROM categorias
-                WHERE LOWER(nombre) = LOWER($1)
-                  AND (usuario_id = $2 OR usuario_id IS NULL)
-                ORDER BY usuario_id NULLS FIRST
-                LIMIT 1;
-            `, [categoriaNombre, usuario_id]);
+            let categoriaRes = await client.query(
+                movimientosQueries.OBTENER_CATEGORIA_POR_NOMBRE, 
+                [categoriaNombre, usuario_id]
+            );
 
             if (categoriaRes.rows.length === 0) {
-                categoriaRes = await client.query(`
-                    INSERT INTO categorias (nombre, usuario_id)
-                    VALUES ($1, $2)
-                    RETURNING id, nombre;
-                `, [categoriaNombre, usuario_id]);
+                categoriaRes = await client.query(
+                    movimientosQueries.CREAR_CATEGORIA, 
+                    [categoriaNombre, usuario_id]
+                );
             }
 
             const obtenerCuenta = async (nombreCuenta) => {
                 const nombreNormalizado = String(nombreCuenta || '').trim();
                 if (!nombreNormalizado) return null;
 
-                let cuentaRes = await client.query(`
-                    SELECT id, nombre, saldo_actual
-                    FROM cuentas
-                    WHERE LOWER(nombre) = LOWER($1)
-                      AND usuario_id = $2
-                    LIMIT 1;
-                `, [nombreNormalizado, usuario_id]);
+                let cuentaRes = await client.query(
+                    movimientosQueries.OBTENER_CUENTA_POR_NOMBRE, 
+                    [nombreNormalizado, usuario_id]
+                );
 
                 if (cuentaRes.rows.length === 0) {
-                    cuentaRes = await client.query(`
-                        INSERT INTO cuentas (nombre, usuario_id)
-                        VALUES ($1, $2)
-                        RETURNING id, nombre, saldo_actual;
-                    `, [nombreNormalizado, usuario_id]);
+                    cuentaRes = await client.query(
+                        movimientosQueries.CREAR_CUENTA, 
+                        [nombreNormalizado, usuario_id]
+                    );
                 }
 
                 return cuentaRes.rows[0];
@@ -113,20 +111,7 @@ class MovimientosModel {
                 throw new Error('La cuenta origen y destino son obligatorias para transferencias.');
             }
 
-            const movimientoRes = await client.query(`
-                INSERT INTO movimientos (
-                    usuario_id,
-                    tipo_movimiento_id,
-                    categoria_id,
-                    cuenta_origen_id,
-                    cuenta_destino_id,
-                    monto,
-                    descripcion,
-                    metodo_pago
-                )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                RETURNING id, usuario_id, monto, descripcion, metodo_pago, fecha;
-            `, [
+            const movimientoRes = await client.query(movimientosQueries.INSERTAR_MOVIMIENTO, [
                 usuario_id,
                 tipoRes.rows[0].id,
                 categoriaRes.rows[0].id,
@@ -139,25 +124,25 @@ class MovimientosModel {
 
             if (tipoNormalizado === 'INGRESO') {
                 await client.query(
-                    'UPDATE cuentas SET saldo_actual = saldo_actual + $1 WHERE id = $2;',
+                    movimientosQueries.INCREMENTAR_SALDO_CUENTA,
                     [montoNumero, cuentaOrigen.id]
                 );
             }
 
             if (tipoNormalizado === 'GASTO') {
                 await client.query(
-                    'UPDATE cuentas SET saldo_actual = saldo_actual - $1 WHERE id = $2;',
+                    movimientosQueries.DECREMENTAR_SALDO_CUENTA,
                     [montoNumero, cuentaOrigen.id]
                 );
             }
 
             if (tipoNormalizado === 'TRANSFERENCIA') {
                 await client.query(
-                    'UPDATE cuentas SET saldo_actual = saldo_actual - $1 WHERE id = $2;',
+                    movimientosQueries.DECREMENTAR_SALDO_CUENTA,
                     [montoNumero, cuentaOrigen.id]
                 );
                 await client.query(
-                    'UPDATE cuentas SET saldo_actual = saldo_actual + $1 WHERE id = $2;',
+                    movimientosQueries.INCREMENTAR_SALDO_CUENTA,
                     [montoNumero, cuentaDestino.id]
                 );
             }
@@ -181,7 +166,9 @@ class MovimientosModel {
     }
 
     /**
-     * Ejecuta el borrado lógico (Soft Delete) de un movimiento utilizando el procedimiento almacenado.
+     * Ejecuta el borrado lógico (Soft Delete) de un movimiento actualizando saldos asociados.
+     * @param {number} movimientoId ID del movimiento a eliminar.
+     * @param {number|null} usuarioId ID del usuario para filtro de seguridad.
      */
     async eliminarMovimientoWeb(movimientoId, usuarioId = null) {
         const client = await db.pool.connect();
@@ -190,23 +177,11 @@ class MovimientosModel {
             await client.query('BEGIN');
 
             const params = [movimientoId];
-            const filtroUsuario = usuarioId ? 'AND m.usuario_id = $2' : '';
+            const conFiltroUsuario = !!usuarioId;
             if (usuarioId) params.push(usuarioId);
 
-            const movimientoRes = await client.query(`
-                SELECT
-                    m.id,
-                    m.monto,
-                    m.cuenta_origen_id,
-                    m.cuenta_destino_id,
-                    tm.nombre AS tipo
-                FROM movimientos m
-                JOIN tipos_movimiento tm ON m.tipo_movimiento_id = tm.id
-                WHERE m.id = $1
-                  ${filtroUsuario}
-                  AND m.deleted_at IS NULL
-                FOR UPDATE;
-            `, params);
+            const query = movimientosQueries.OBTENER_MOVIMIENTO_PARA_ELIMINAR(conFiltroUsuario);
+            const movimientoRes = await client.query(query, params);
 
             if (movimientoRes.rows.length === 0) {
                 const error = new Error('Movimiento no encontrado o ya eliminado.');
@@ -219,14 +194,14 @@ class MovimientosModel {
 
             if (movimiento.tipo === 'INGRESO' && movimiento.cuenta_origen_id) {
                 await client.query(
-                    'UPDATE cuentas SET saldo_actual = saldo_actual - $1 WHERE id = $2',
+                    movimientosQueries.DECREMENTAR_SALDO_CUENTA,
                     [monto, movimiento.cuenta_origen_id]
                 );
             }
 
             if (movimiento.tipo === 'GASTO' && movimiento.cuenta_origen_id) {
                 await client.query(
-                    'UPDATE cuentas SET saldo_actual = saldo_actual + $1 WHERE id = $2',
+                    movimientosQueries.INCREMENTAR_SALDO_CUENTA,
                     [monto, movimiento.cuenta_origen_id]
                 );
             }
@@ -234,21 +209,21 @@ class MovimientosModel {
             if (movimiento.tipo === 'TRANSFERENCIA') {
                 if (movimiento.cuenta_origen_id) {
                     await client.query(
-                        'UPDATE cuentas SET saldo_actual = saldo_actual + $1 WHERE id = $2',
+                        movimientosQueries.INCREMENTAR_SALDO_CUENTA,
                         [monto, movimiento.cuenta_origen_id]
                     );
                 }
 
                 if (movimiento.cuenta_destino_id) {
                     await client.query(
-                        'UPDATE cuentas SET saldo_actual = saldo_actual - $1 WHERE id = $2',
+                        movimientosQueries.DECREMENTAR_SALDO_CUENTA,
                         [monto, movimiento.cuenta_destino_id]
                     );
                 }
             }
 
             await client.query(
-                'UPDATE movimientos SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
+                movimientosQueries.SOFT_DELETE_MOVIMIENTO,
                 [movimientoId]
             );
 
@@ -265,15 +240,17 @@ class MovimientosModel {
 
     /**
      * Obtiene la lista de cuentas de un usuario con sus saldos.
+     * @param {number} usuarioId ID del usuario.
      */
     async listarCuentas(usuarioId) {
-        const query = 'SELECT * FROM fx_listar_cuentas_usuario($1);';
-        const res = await db.query(query, [usuarioId]);
+        const res = await db.query(movimientosQueries.LISTAR_CUENTAS, [usuarioId]);
         return res.rows;
     }
 
     /**
      * Obtiene una cuenta por nombre o la crea para el usuario indicado.
+     * @param {string} nombre Nombre de la cuenta.
+     * @param {number} usuarioId ID del usuario.
      */
     async obtenerOCrearCuenta(nombre, usuarioId) {
         const nombreNormalizado = String(nombre || '').trim();
@@ -281,29 +258,21 @@ class MovimientosModel {
             throw new Error('El nombre de la cuenta y el usuario son obligatorios.');
         }
 
-        const existente = await db.query(`
-            SELECT id, nombre, usuario_id, saldo_actual, created_at
-            FROM cuentas
-            WHERE LOWER(nombre) = LOWER($1)
-              AND usuario_id = $2
-            LIMIT 1;
-        `, [nombreNormalizado, usuarioId]);
+        const existente = await db.query(movimientosQueries.OBTENER_CUENTA_DETALLADA, [nombreNormalizado, usuarioId]);
 
         if (existente.rows.length > 0) {
             return existente.rows[0];
         }
 
-        const creada = await db.query(`
-            INSERT INTO cuentas (nombre, usuario_id)
-            VALUES ($1, $2)
-            RETURNING id, nombre, usuario_id, saldo_actual, created_at;
-        `, [nombreNormalizado, usuarioId]);
+        const creada = await db.query(movimientosQueries.CREAR_CUENTA_DETALLADA, [nombreNormalizado, usuarioId]);
 
         return creada.rows[0];
     }
 
     /**
      * Crea una cuenta para el usuario sin duplicarla si ya existe.
+     * @param {string} nombre Nombre de la cuenta.
+     * @param {number} usuarioId ID del usuario.
      */
     async crearCuentaParaUsuario(nombre, usuarioId) {
         const nombreNormalizado = String(nombre || '').trim();
@@ -311,65 +280,58 @@ class MovimientosModel {
             throw new Error('El nombre de la cuenta y el usuario son obligatorios.');
         }
 
-        const existente = await db.query(`
-            SELECT id, nombre, usuario_id, saldo_actual, created_at
-            FROM cuentas
-            WHERE LOWER(nombre) = LOWER($1)
-              AND usuario_id = $2
-            LIMIT 1;
-        `, [nombreNormalizado, usuarioId]);
+        const existente = await db.query(movimientosQueries.OBTENER_CUENTA_DETALLADA, [nombreNormalizado, usuarioId]);
 
         if (existente.rows.length > 0) {
             return { creado: false, cuenta: existente.rows[0] };
         }
 
-        const creada = await db.query(`
-            INSERT INTO cuentas (nombre, usuario_id)
-            VALUES ($1, $2)
-            RETURNING id, nombre, usuario_id, saldo_actual, created_at;
-        `, [nombreNormalizado, usuarioId]);
+        const creada = await db.query(movimientosQueries.CREAR_CUENTA_DETALLADA, [nombreNormalizado, usuarioId]);
 
         return { creado: true, cuenta: creada.rows[0] };
     }
 
     /**
      * Obtiene el balance total (suma de todas las cuentas).
+     * @param {number} usuarioId ID del usuario.
      */
     async obtenerBalanceTotal(usuarioId) {
-        // Usamos "AS balance_total" para que el controlador lo lea igual que antes
-        const query = 'SELECT fx_obtener_balance_general($1) AS balance_total;';
-        const res = await db.query(query, [usuarioId]);
+        const res = await db.query(movimientosQueries.OBTENER_BALANCE_TOTAL, [usuarioId]);
         return parseFloat(res.rows[0]?.balance_total || 0);
     }
 
     /**
      * Obtiene el resumen de movimientos del día de hoy.
+     * @param {number} usuarioId ID del usuario.
      */
     async obtenerResumenHoy(usuarioId) {
-        const query = 'SELECT * FROM fx_obtener_resumen_hoy($1);';
-        const res = await db.query(query, [usuarioId]);
+        const res = await db.query(movimientosQueries.OBTENER_RESUMEN_HOY, [usuarioId]);
         return res.rows;
     }
 
     /**
      * Obtiene el resumen de movimientos del mes en curso.
+     * @param {number} usuarioId ID del usuario.
      */
     async obtenerResumenMes(usuarioId) {
-        const query = 'SELECT * FROM fx_obtener_resumen_mes($1);';
-        const res = await db.query(query, [usuarioId]);
+        const res = await db.query(movimientosQueries.OBTENER_RESUMEN_MES, [usuarioId]);
         return res.rows;
     }
 
     /**
      * Obtiene la suma de gastos por categoría en el mes actual.
+     * @param {number} usuarioId ID del usuario.
      */
     async obtenerGastosCategoriaMes(usuarioId) {
-        const query = 'SELECT * FROM fx_obtener_gastos_categoria_mes($1);';
-        const res = await db.query(query, [usuarioId]);
+        const res = await db.query(movimientosQueries.OBTENER_GASTOS_CATEGORIA_MES, [usuarioId]);
         return res.rows;
     }
+
     /**
      * Edita un movimiento existente y recalcula los saldos de las cuentas involucradas.
+     * @param {number} movimientoId ID del movimiento.
+     * @param {number} usuarioId ID del usuario propietario.
+     * @param {object} datos Datos nuevos del movimiento.
      */
     async editarMovimiento(movimientoId, usuarioId, datos) {
         const {
@@ -382,8 +344,7 @@ class MovimientosModel {
         } = datos;
 
         try {
-            const query = 'SELECT * FROM fx_editar_movimiento($1, $2, $3, $4, $5, $6, $7, $8);';
-            const res = await db.query(query, [
+            const res = await db.query(movimientosQueries.EDITAR_MOVIMIENTO, [
                 movimientoId,
                 usuarioId,
                 categoria,
@@ -400,14 +361,15 @@ class MovimientosModel {
             throw error;
         }
     }
+
     /**
      * Obtiene el historial de los últimos 100 movimientos de un usuario.
      * Delegado completamente a la función fx_listar_historial_movimientos en PostgreSQL.
+     * @param {number} usuarioId ID del usuario.
      */
     async obtenerHistorial(usuarioId) {
         try {
-            const query = 'SELECT * FROM fx_listar_historial_movimientos($1);';
-            const res = await db.query(query, [usuarioId]);
+            const res = await db.query(movimientosQueries.OBTENER_HISTORIAL, [usuarioId]);
             return res.rows;
         } catch (error) {
             logger.error('Error al invocar fx_listar_historial_movimientos:', error);
@@ -415,6 +377,10 @@ class MovimientosModel {
         }
     }
 
+    /**
+     * Obtiene el historial de movimientos para administración.
+     * @param {number} usuarioId ID del usuario.
+     */
     async obtenerHistorialPorUsuarioAdmin(usuarioId) {
         return await this.obtenerHistorial(usuarioId);
     }
