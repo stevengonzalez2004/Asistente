@@ -1,1 +1,47 @@
-<router-outlet />
+<div class="app-container" [class.with-layout]="isLoggedIn">
+    @if (isLoggedIn && !isLoginPage()) {
+    <aside class="global-sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">AF</div>
+            <div class="brand-text">
+                <h3>Asistente</h3>
+                <p>Financiero</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu" [attr.aria-label]="isAdmin ? 'Menú Administrador' : 'Menú Usuario'">
+            @if (isAdmin) {
+            <a routerLink="/admin" routerLinkActive="active" class="menu-item">
+                <span class="icon">◉</span>
+                <span class="label">Administración</span>
+            </a>
+            } @if (isUser) {
+            <a routerLink="/usuario" routerLinkActive="active" class="menu-item">
+                <span class="icon">◎</span>
+                <span class="label">Mi Dashboard</span>
+            </a>
+            }
+        </nav>
+
+        <div class="sidebar-footer">
+            <button type="button" class="logout-btn" (click)="logout()">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="global-navbar">
+            <div class="navbar-brand">Control Financiero</div>
+            <div class="navbar-spacer"></div>
+            <div class="navbar-user">
+                <span class="user-name">{{ userName }}</span>
+                <span class="user-role">{{ isAdmin ? 'Administrador' : 'Usuario' }}</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <router-outlet />
+        </main>
+    </div>
+    } @else {
+    <router-outlet /> }
+</div>
