@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-const authRoutes = require('../src/routes/authRoutes');
-const movimientosRoutes = require('../src/routes/movimientosRoutes');
-const iaRoutes = require('../src/routes/iaRoutes');
-const reportesRoutes = require('../src/routes/reportesRoutes');
-const usuariosRoutes = require('../src/routes/usuariosRoutes');
+const authRoutes = require('./authRoutes');
+const movimientosRoutes = require('./movimientosRoutes');
+const iaRoutes = require('./iaRoutes');
+const reportesRoutes = require('./reportesRoutes');
+const usuariosRoutes = require('./usuariosRoutes');
 
 // Registrar rutas
 router.use('/api/auth', authRoutes);
