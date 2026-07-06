@@ -4,6 +4,7 @@ const usuariosModel = require('../models/usuariosModel');
 // Asumo que tu compañero creó un servicio para enviar los correos
 const authService = require('../services/authService');
 const logger = require('../utils/logger');
+const { registrarAuditoria } = require('../utils/auditoria');
 
 // ==========================================
 // 1. LOGIN Y REGISTRO
@@ -19,6 +20,8 @@ exports.login = async (req, res, next) => {
         const resultado = await usuariosModel.BuscarPorCorreo(correo);
 
         if (resultado.rows.length === 0) {
+            logger.warn(`Intento de login fallido para correo ${correo}: correo no encontrado.`);
+            await registrarAuditoria(req, { accion: 'LOGIN_FALLIDO', entidad: 'usuarios', detalle: { correo } });
             return res.status(400).json({ message: 'Correo o contraseña incorrectos' });
         }
 
@@ -26,6 +29,8 @@ exports.login = async (req, res, next) => {
         const passwordValida = await bcrypt.compare(password, usuario.password);
 
         if (!passwordValida) {
+            logger.warn(`Intento de login fallido para correo ${correo}: contraseña incorrecta.`);
+            await registrarAuditoria(req, { accion: 'LOGIN_FALLIDO', entidad: 'usuarios', entidadId: usuario.id, detalle: { correo } });
             return res.status(400).json({ message: 'Correo o contraseña incorrectos' });
         }
 
@@ -36,16 +41,64 @@ exports.login = async (req, res, next) => {
         if (!secret) {
     throw new Error('ERROR CRÍTICO: La variable JWT_SECRET no está definida en las variables de entorno.');
 }
-        const token = jwt.sign(payload, secret, { expiresIn: '4h' });
+        const token = jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn: '30m' });
+        const refreshToken = jwt.sign({ id: usuario.id }, process.env.REFRESH_JWT_SECRET, {
+            algorithm: 'HS256',
+            expiresIn: '30d',
+        });
 
         logger.info(`Login exitoso: usuario ${usuario.id} (${usuario.correo}).`);
+        req.usuario = { id: usuario.id, correo: usuario.correo, rol: usuario.rol };
+        await registrarAuditoria(req, { accion: 'LOGIN', entidad: 'usuarios', entidadId: usuario.id });
         res.status(200).json({
             message: 'Login exitoso',
             token,
+            refreshToken,
             usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol }
         });
     } catch (error) {
         logger.error('Error en login:', error);
+        next(error);
+    }
+};
+
+/**
+ * Emite un nuevo access token de corta duracion a partir de un refresh token vigente.
+ * Re-valida al usuario contra la BD en cada llamada (via ObtenerUsuarioPorId, que ya excluye
+ * usuarios con deleted_at) para que deshabilitar/eliminar un usuario corte su acceso aunque
+ * su refresh token (stateless, sin tabla de revocacion) siga sin expirar.
+ * @route POST /api/auth/refresh
+ */
+exports.refresh = async (req, res, next) => {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ message: 'refreshToken es requerido.' });
+        }
+
+        let payload;
+        try {
+            payload = jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET, { algorithms: ['HS256'] });
+        } catch (error) {
+            return res.status(403).json({ message: 'Refresh token inválido o expirado.' });
+        }
+
+        const resultado = await usuariosModel.ObtenerUsuarioPorId(payload.id);
+        if (resultado.rows.length === 0) {
+            return res.status(403).json({ message: 'Refresh token inválido o expirado.' });
+        }
+        const usuario = resultado.rows[0];
+
+        const token = jwt.sign(
+            { id: usuario.id, correo: usuario.correo, rol: usuario.rol },
+            process.env.JWT_SECRET,
+            { algorithm: 'HS256', expiresIn: '30m' },
+        );
+
+        logger.info(`Token refrescado: usuario ${usuario.id} (${usuario.correo}).`);
+        res.status(200).json({ message: 'Token renovado', token });
+    } catch (error) {
+        logger.error('Error en refresh:', error);
         next(error);
     }
 };
@@ -61,9 +114,10 @@ exports.registroPublico = async (req, res, next) => {
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(password, salt);
 
-        await usuariosModel.RegistroCompleto({ nombre, correo, password: hashPassword });
+        const nuevoUsuario = await usuariosModel.RegistroCompleto({ nombre, correo, password: hashPassword });
 
         logger.info(`Registro publico exitoso: ${correo}.`);
+        await registrarAuditoria(req, { accion: 'REGISTRO', entidad: 'usuarios', entidadId: nuevoUsuario?.id, detalle: { correo } });
         res.status(201).json({ message: 'Registro exitoso. Ya puede iniciar sesión.' });
     } catch (error) {
         if (error.code === '23505') return res.status(400).json({ message: 'El correo ya está registrado' });
@@ -135,6 +189,7 @@ exports.cambiarContrasena = async (req, res, next) => {
 
         await authService.cambiarContrasena(correo, hashPassword);
         logger.info(`Contraseña actualizada via recuperacion para ${correo}.`);
+        await registrarAuditoria(req, { accion: 'CAMBIO_PASSWORD', entidad: 'usuarios', entidadId: existe.rows[0].id, detalle: { correo } });
         res.status(200).json({ message: 'Contraseña actualizada correctamente.' });
     } catch (error) {
         logger.error('Error al cambiar password:', error);

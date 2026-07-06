@@ -7,6 +7,10 @@ const db = require('../config/db');
 const logger = require('../utils/logger');
 const movimientosQueries = require('../queries/movimientosQueries');
 const { crearConstructorCondiciones, construirResultadoPaginado } = require('../utils/queryBuilder');
+const { crearCache } = require('../utils/memCache');
+
+const CLAVE_CACHE_CATEGORIAS = 'categorias';
+const cacheCategorias = crearCache({ ttlMs: 10 * 60 * 1000 });
 
 class MovimientosModel {
     /**
@@ -77,9 +81,10 @@ class MovimientosModel {
 
             if (categoriaRes.rows.length === 0) {
                 categoriaRes = await client.query(
-                    movimientosQueries.CREAR_CATEGORIA, 
+                    movimientosQueries.CREAR_CATEGORIA,
                     [categoriaNombre, usuario_id]
                 );
+                this.invalidarCacheCategorias();
             }
 
             const obtenerCuenta = async (nombreCuenta) => {
@@ -387,6 +392,20 @@ class MovimientosModel {
     }
 
     /**
+     * Version paginada del historial de un usuario (opt-in): a diferencia de
+     * obtenerHistorial/obtenerHistorialPorUsuarioAdmin (fijas a los ultimos 100 via
+     * fx_listar_historial_movimientos), permite pedir cualquier pagina reutilizando
+     * listarMovimientosGlobalPaginado filtrado por usuarioId (mismas filas/orden que la
+     * funcion almacenada, verificado). No reemplaza los metodos existentes.
+     * @param {object} opts { usuarioId, page, limit }
+     */
+    async obtenerHistorialPaginado({ usuarioId, page = 1, limit = 100 } = {}) {
+        return this.listarMovimientosGlobalPaginado({
+            usuarioId, page, limit, sortBy: 'fecha', sortDir: 'desc', estado: 'activo',
+        });
+    }
+
+    /**
      * Lista movimientos de TODOS los usuarios, paginados/ordenables/filtrables, para administración.
      * @param {object} opts { page, limit, sortBy, sortDir, usuarioId, categoria, tipo, montoMin, montoMax, estado, fechaDesde, fechaHasta, q }
      */
@@ -434,8 +453,15 @@ class MovimientosModel {
      * Lista alfabética de nombres de categorías existentes (para el filtro del panel global).
      */
     async listarCategoriasDistintas() {
-        const res = await db.query(movimientosQueries.OBTENER_CATEGORIAS_DISTINCT);
-        return res.rows.map((r) => r.nombre);
+        return cacheCategorias.get(CLAVE_CACHE_CATEGORIAS, async () => {
+            const res = await db.query(movimientosQueries.OBTENER_CATEGORIAS_DISTINCT);
+            return res.rows.map((r) => r.nombre);
+        });
+    }
+
+    /** Invalida el cache de categorias distintas (llamar tras crear una categoria nueva). */
+    invalidarCacheCategorias() {
+        cacheCategorias.invalidate(CLAVE_CACHE_CATEGORIAS);
     }
 
     /**

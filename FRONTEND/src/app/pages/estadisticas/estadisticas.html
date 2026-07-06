@@ -6,9 +6,7 @@
         </div>
     </header>
 
-    @if (error()) {
-    <p class="notice danger">{{ error() }}</p>
-    }
+    <app-notice tipo="danger" [mensaje]="error()" />
 
     <!-- ============================================================ -->
     <!-- KPIs: Mayor gasto / Mayor ingreso / Promedio diario / Promedio mensual -->
@@ -30,6 +28,7 @@
     <!-- Graficos                                                       -->
     <!-- ============================================================ -->
     <section class="charts-grid">
+        @defer (on viewport) {
         <app-chart-card titulo="Categorias mas utilizadas (Pie)" icon="pie_chart" [options]="pieOptions()" [loading]="cargando()" />
         <app-chart-card titulo="Ingresos vs Gastos (Bar)" icon="bar_chart" [options]="barOptions()" [loading]="cargando()" />
         <app-chart-card titulo="Tendencia mensual (Line)" icon="show_chart" [options]="lineOptions()" [loading]="cargando()" />
@@ -37,6 +36,17 @@
         <app-chart-card titulo="Usuarios mas activos (Donut)" icon="donut_large" [options]="donutUsuariosOptions()" [loading]="cargando()" />
         <app-chart-card titulo="Balance mensual (Area)" icon="area_chart" [options]="areaOptions()" [loading]="cargando()" />
         <app-chart-card titulo="Calendario financiero" icon="calendar_view_month" [options]="calendarioOptions()" [loading]="cargando()" />
+        } @placeholder {
+        <div style="display: contents">
+            <app-skeleton variant="chart" height="280px" />
+            <app-skeleton variant="chart" height="280px" />
+            <app-skeleton variant="chart" height="280px" />
+            <app-skeleton variant="chart" height="280px" />
+            <app-skeleton variant="chart" height="280px" />
+            <app-skeleton variant="chart" height="280px" />
+            <app-skeleton variant="chart" height="280px" />
+        </div>
+        }
     </section>
 
     <!-- ============================================================ -->

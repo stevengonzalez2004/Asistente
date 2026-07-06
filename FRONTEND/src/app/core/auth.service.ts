@@ -2,10 +2,11 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
-import { LoginResponse, Usuario } from './models';
+import { LoginResponse, RefreshResponse, Usuario } from './models';
 
 const API_URL = 'http://localhost:3000/api';
 const TOKEN_KEY = 'asistente_financiero_token';
+const REFRESH_TOKEN_KEY = 'asistente_financiero_refresh_token';
 const USER_KEY = 'asistente_financiero_usuario';
 
 @Injectable({ providedIn: 'root' })
@@ -21,9 +22,18 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${API_URL}/auth/login`, { correo, password }).pipe(
       tap((response) => {
         localStorage.setItem(TOKEN_KEY, response.token);
+        localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
         localStorage.setItem(USER_KEY, JSON.stringify(response.usuario));
         this.usuario.set(response.usuario);
       }),
+    );
+  }
+
+  /** Renueva el access token usando el refresh token almacenado. Usado por el interceptor ante un 401/403. */
+  refreshToken(): Observable<RefreshResponse> {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    return this.http.post<RefreshResponse>(`${API_URL}/auth/refresh`, { refreshToken }).pipe(
+      tap((response) => localStorage.setItem(TOKEN_KEY, response.token)),
     );
   }
 
@@ -55,6 +65,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     this.usuario.set(null);
     this.router.navigateByUrl('/login');

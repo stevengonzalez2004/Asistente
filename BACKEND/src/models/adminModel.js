@@ -2,6 +2,10 @@
 const db = require('../config/db');
 const adminQueries = require('../queries/adminQueries');
 const movimientosModel = require('./movimientosModel');
+const { crearCache } = require('../utils/memCache');
+
+const CLAVE_CACHE_DASHBOARD = 'dashboard';
+const cacheDashboard = crearCache({ ttlMs: 60 * 1000 });
 
 class AdminModel {
     /**
@@ -33,6 +37,11 @@ class AdminModel {
      * Ejecuta todas las consultas en paralelo para minimizar la latencia.
      */
     async obtenerMetricasDashboard() {
+        return cacheDashboard.get(CLAVE_CACHE_DASHBOARD, async () => this._obtenerMetricasDashboardSinCache());
+    }
+
+    /** Cuerpo real de obtenerMetricasDashboard, sin la capa de cache (60s, ver memCache.js). */
+    async _obtenerMetricasDashboardSinCache() {
         const [
             balanceGlobalRes,
             balanceDisponibleRes,

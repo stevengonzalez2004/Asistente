@@ -2,9 +2,10 @@
 const movimientosService = require('../services/movimientosService');
 const movimientosModel = require('../models/movimientosModel');
 const logger = require('../utils/logger');
-const { filasACsv } = require('../utils/csv');
+const { filasACsv, neutralizarCeldaTexto } = require('../utils/csv');
 const { resolverRangoFecha } = require('../utils/dateRangePresets');
 const { mapMovimiento, mapMovimientos } = require('../dtos/movimientoDto');
+const { registrarAuditoria } = require('../utils/auditoria');
 
 const LIMITE_EXPORT_CSV = 5000;
 
@@ -85,6 +86,7 @@ class MovimientosController {
                 });
             }
 
+            logger.info(`Movimiento registrado por usuario ${usuarioId}: tipo=${tipo}, monto=${monto}.`);
             return res.status(201).json({
                 success: true,
                 message: 'Movimiento registrado correctamente.',
@@ -112,6 +114,9 @@ class MovimientosController {
             }
 
             const result = await movimientosService.crearCuenta({ usuario_id: usuarioId, nombre });
+            if (result.creado) {
+                logger.info(`Cuenta "${nombre}" creada por usuario ${usuarioId}.`);
+            }
             return res.status(result.creado ? 201 : 200).json({
                 success: true,
                 message: result.creado ? 'Cuenta creada correctamente.' : 'La cuenta ya existe.',
@@ -188,6 +193,7 @@ class MovimientosController {
                 metodo_pago
             });
 
+            logger.info(`Movimiento ${movimientoId} editado por usuario ${usuarioId}.`);
             return res.status(200).json({
                 success: true,
                 message: 'Movimiento actualizado correctamente. Los saldos han sido recalculados.',
@@ -218,6 +224,7 @@ class MovimientosController {
 
             const resultado = await movimientosModel.eliminarMovimientoWeb(movimientoId);
 
+            logger.info(`Movimiento ${movimientoId} eliminado por usuario ${req.usuario.id}.`);
             return res.status(200).json({
                 success: true,
                 message: resultado.message // "Movimiento enviado a la papelera correctamente."
@@ -230,18 +237,34 @@ class MovimientosController {
     }
 
     /**
-     * Obtiene el historial completo de movimientos para la tabla del panel web.
+     * Obtiene el historial de movimientos para la tabla del panel web. Sin `page`/`limit` en
+     * el query, mantiene el comportamiento actual (ultimos 100, sin meta). Con alguno de los
+     * dos presentes, usa el nuevo camino paginado y agrega `meta` a la respuesta.
      * @route GET /api/movimientos
      */
     async obtenerHistorialWeb(req, res, next) {
         try {
             const usuarioId = req.usuario.id;
+            const { page, limit } = req.query;
 
-            const historial = await movimientosModel.obtenerHistorial(usuarioId);
+            if (page === undefined && limit === undefined) {
+                const historial = await movimientosModel.obtenerHistorial(usuarioId);
+                return res.status(200).json({
+                    success: true,
+                    data: mapMovimientos(historial)
+                });
+            }
+
+            const resultado = await movimientosModel.obtenerHistorialPaginado({
+                usuarioId,
+                page: parseInt(page) || 1,
+                limit: Math.min(parseInt(limit) || 100, 100),
+            });
 
             return res.status(200).json({
                 success: true,
-                data: mapMovimientos(historial)
+                data: mapMovimientos(resultado.data),
+                meta: { total: resultado.total, page: resultado.page, limit: resultado.limit },
             });
         } catch (error) {
             logger.error('Error al obtener historial de movimientos:', error);
@@ -306,6 +329,8 @@ class MovimientosController {
                 });
             }
 
+            logger.info(`Movimiento ${movimientoId} duplicado por admin (nuevo id ${resultado.movimiento.id}).`);
+            await registrarAuditoria(req, { accion: 'MOVIMIENTO_DUPLICADO', entidad: 'movimientos', entidadId: resultado.movimiento.id, detalle: { movimientoOriginal: movimientoId } });
             return res.status(201).json({
                 success: true,
                 message: 'Movimiento duplicado correctamente.',
@@ -333,12 +358,16 @@ class MovimientosController {
 
             const encabezados = ['ID', 'Fecha', 'Usuario', 'Correo', 'Categoria', 'Tipo', 'Monto', 'Descripcion', 'Cuenta origen', 'Cuenta destino', 'Estado'];
             const filas = resultado.data.map((m) => [
-                m.id, m.fecha, m.usuario_nombre, m.usuario_correo, m.categoria, m.tipo, m.monto,
-                m.descripcion, m.cuenta_origen, m.cuenta_destino, m.deleted_at ? 'Eliminado' : 'Activo',
+                m.id, m.fecha, neutralizarCeldaTexto(m.usuario_nombre), neutralizarCeldaTexto(m.usuario_correo),
+                neutralizarCeldaTexto(m.categoria), m.tipo, m.monto, neutralizarCeldaTexto(m.descripcion),
+                neutralizarCeldaTexto(m.cuenta_origen), neutralizarCeldaTexto(m.cuenta_destino),
+                m.deleted_at ? 'Eliminado' : 'Activo',
             ]);
 
             const csv = filasACsv(encabezados, filas);
 
+            logger.info(`Exportacion CSV de movimientos globales generada por admin (${resultado.data.length} filas).`);
+            await registrarAuditoria(req, { accion: 'EXPORT_CSV_MOVIMIENTOS', entidad: 'movimientos', detalle: { filas: resultado.data.length } });
             res.setHeader('Content-Type', 'text/csv; charset=utf-8');
             res.setHeader('Content-Disposition', 'attachment; filename="movimientos.csv"');
             if (resultado.total > LIMITE_EXPORT_CSV) {

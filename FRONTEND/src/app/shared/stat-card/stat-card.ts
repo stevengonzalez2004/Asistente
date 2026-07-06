@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Skeleton } from '../skeleton/skeleton';
@@ -11,6 +11,7 @@ export type StatCardAccent = 'cyan' | 'teal' | 'blue' | 'danger' | 'success' | '
   imports: [CommonModule, MatIconModule, MatTooltipModule, Skeleton],
   templateUrl: './stat-card.html',
   styleUrl: './stat-card.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatCard {
   @Input({ required: true }) label!: string;

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -22,6 +22,7 @@ function passwordsCoincidenValidator(group: AbstractControl): ValidationErrors |
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   templateUrl: './reset-password-dialog.html',
   styleUrl: './reset-password-dialog.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ResetPasswordDialog {
   private readonly dialogRef = inject(MatDialogRef<ResetPasswordDialog, string>);

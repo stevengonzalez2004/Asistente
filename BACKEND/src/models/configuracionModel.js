@@ -1,17 +1,56 @@
 // src/models/configuracionModel.js
 const db = require('../config/db');
 const configuracionQueries = require('../queries/configuracionQueries');
+const { crearCache } = require('../utils/memCache');
+
+const PATRON_IDENTIFICADOR_SEGURO = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+const CLAVE_CACHE = 'config';
+const cacheConfiguracion = crearCache({ ttlMs: 5 * 60 * 1000 });
 
 class ConfiguracionModel {
+    /**
+     * Obtiene el conjunto real de columnas de una tabla directamente de la BD
+     * (information_schema), en vez de mantener una lista estatica que podria desincronizarse
+     * del esquema real (confirmado: schema.sql esta desactualizado respecto a la BD viva).
+     * @param {import('pg').PoolClient} client
+     * @param {string} tabla Nombre de tabla, siempre proveniente del whitelist TABLAS_RESPALDO.
+     * @returns {Promise<Set<string>>}
+     */
+    async _obtenerColumnasReales(client, tabla) {
+        const res = await client.query(
+            'SELECT column_name FROM information_schema.columns WHERE table_name = $1',
+            [tabla]
+        );
+        return new Set(res.rows.map((fila) => fila.column_name));
+    }
+
+    /**
+     * Valida que cada clave de una fila de restauracion sea un identificador seguro y
+     * corresponda a una columna real de la tabla, antes de usarla en un INSERT dinamico
+     * (los valores ya viajan parametrizados; esto protege los NOMBRES de columna, que no).
+     * @param {string[]} columnas
+     * @param {Set<string>} columnasPermitidas
+     * @param {string} tabla
+     */
+    _validarColumnas(columnas, columnasPermitidas, tabla) {
+        for (const columna of columnas) {
+            if (!PATRON_IDENTIFICADOR_SEGURO.test(columna) || !columnasPermitidas.has(columna)) {
+                throw new Error(`Columna no permitida en la tabla "${tabla}": "${columna}".`);
+            }
+        }
+    }
+
     /**
      * Devuelve toda la configuracion como un objeto plano { clave: valor }.
      */
     async obtenerConfiguracion() {
-        const res = await db.query(configuracionQueries.SELECT_ALL);
-        return res.rows.reduce((acumulado, fila) => {
-            acumulado[fila.clave] = fila.valor;
-            return acumulado;
-        }, {});
+        return cacheConfiguracion.get(CLAVE_CACHE, async () => {
+            const res = await db.query(configuracionQueries.SELECT_ALL);
+            return res.rows.reduce((acumulado, fila) => {
+                acumulado[fila.clave] = fila.valor;
+                return acumulado;
+            }, {});
+        });
     }
 
     /**
@@ -33,6 +72,7 @@ class ConfiguracionModel {
             client.release();
         }
 
+        cacheConfiguracion.invalidate(CLAVE_CACHE);
         return this.obtenerConfiguracion();
     }
 
@@ -72,9 +112,12 @@ class ConfiguracionModel {
 
             for (const tabla of configuracionQueries.TABLAS_RESPALDO) {
                 const filas = payload[tabla];
+                const columnasPermitidas = await this._obtenerColumnasReales(client, tabla);
+
                 for (const fila of filas) {
                     const columnas = Object.keys(fila);
                     if (columnas.length === 0) continue;
+                    this._validarColumnas(columnas, columnasPermitidas, tabla);
                     const marcadores = columnas.map((_, indice) => `$${indice + 1}`).join(', ');
                     const valores = columnas.map((columna) => fila[columna]);
                     await client.query(
@@ -99,6 +142,7 @@ class ConfiguracionModel {
             client.release();
         }
 
+        cacheConfiguracion.invalidate(CLAVE_CACHE); // restaurarDatos tambien reemplaza 'configuracion'
         return { restaurado: true };
     }
 }

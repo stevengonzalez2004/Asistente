@@ -1,10 +1,12 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ApiService } from './core/api.service';
 import { AuthService } from './core/auth.service';
+import { ConfiguracionService } from './core/configuracion.service';
 import { TemaSistema } from './core/models';
 import { ADMIN_NAV_ITEMS, SidebarNavItem, USER_NAV_ITEMS } from './core/sidebar-nav';
 import { ThemeService } from './core/theme.service';
@@ -19,6 +21,7 @@ const NAVBAR_BRAND_POR_DEFECTO = 'Control Financiero';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatIconModule, MatTooltipModule],
   templateUrl: './app.html',
   styleUrl: './app.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App implements OnInit {
   protected readonly adminNavItems: SidebarNavItem[] = ADMIN_NAV_ITEMS;
@@ -31,19 +34,34 @@ export class App implements OnInit {
   protected readonly navbarBrand = signal(NAVBAR_BRAND_POR_DEFECTO);
   protected readonly logoUrl = signal('');
 
+  /**
+   * Bajo OnPush, leer `router.url` directamente en un getter no es reactivo a la
+   * navegacion (no hay senal/evento que dispare un chequeo). Este signal se actualiza
+   * en cada NavigationEnd para que isLoginPage() siga funcionando correctamente.
+   */
+  private readonly currentUrl;
+
   constructor(
-    private readonly api: ApiService,
+    private readonly configuracionService: ConfiguracionService,
     private readonly authService: AuthService,
     private readonly router: Router,
     private readonly themeService: ThemeService,
   ) {
+    this.currentUrl = toSignal(
+      this.router.events.pipe(
+        filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd),
+        map((evento) => evento.urlAfterRedirects),
+      ),
+      { initialValue: this.router.url },
+    );
+
     const temaInicial = this.themeService.obtenerTema();
     this.tema.set(temaInicial);
     this.themeService.aplicarTema(temaInicial);
   }
 
   ngOnInit(): void {
-    this.api.obtenerConfiguracion().subscribe((config) => this.aplicarMarca(config));
+    this.configuracionService.obtenerConfiguracion().subscribe((config) => this.aplicarMarca(config));
   }
 
   protected toggleTema(): void {
@@ -110,7 +128,8 @@ export class App implements OnInit {
   }
 
   protected isLoginPage(): boolean {
-    return this.router.url === '/login' || this.router.url === '/';
+    const url = this.currentUrl();
+    return url === '/login' || url === '/';
   }
 
   protected toggleSidebar(): void {

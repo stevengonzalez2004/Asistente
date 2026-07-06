@@ -17,7 +17,7 @@ exports.verificarToken = (req, res, next) => {
         if (!secret) {
     throw new Error('ERROR CRÍTICO: La variable JWT_SECRET no está definida en las variables de entorno.');
 }
-        const payload = jwt.verify(token, secret);
+        const payload = jwt.verify(token, secret, { algorithms: ['HS256'] });
 
         // 4. Inyectar los datos del usuario desencriptados en la petición (req)
         req.usuario = payload;

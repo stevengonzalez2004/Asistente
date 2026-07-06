@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -31,6 +31,7 @@ export interface EditUserDialogResult {
   ],
   templateUrl: './edit-user-dialog.html',
   styleUrl: './edit-user-dialog.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditUserDialog {
   private readonly dialogRef = inject(MatDialogRef<EditUserDialog, EditUserDialogResult>);

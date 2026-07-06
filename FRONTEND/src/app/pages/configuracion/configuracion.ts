@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,7 +9,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ConfiguracionService } from '../../core/configuracion.service';
 import { Configuracion as ConfiguracionModel, RespaldoPayload } from '../../core/models';
+import { Notice } from '../../shared/notice/notice';
 import { PanelCard } from '../../shared/panel-card/panel-card';
 import { Skeleton } from '../../shared/skeleton/skeleton';
 
@@ -26,13 +28,16 @@ import { Skeleton } from '../../shared/skeleton/skeleton';
     MatTooltipModule,
     PanelCard,
     Skeleton,
+    Notice,
   ],
   templateUrl: './configuracion.html',
   styleUrl: './configuracion.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Configuracion implements OnInit {
   private readonly api = inject(ApiService);
   private readonly authService = inject(AuthService);
+  private readonly configuracionService = inject(ConfiguracionService);
 
   readonly cargando = signal(true);
   readonly guardando = signal(false);
@@ -63,7 +68,7 @@ export class Configuracion implements OnInit {
     this.cargando.set(true);
     this.error.set('');
 
-    this.api.obtenerConfiguracionAdmin().subscribe({
+    this.configuracionService.obtenerConfiguracionAdmin().subscribe({
       next: (config) => {
         this.nombreSistema.set(config.nombre_sistema || '');
         this.logoUrl.set(config.logo_url || '');
@@ -102,7 +107,7 @@ export class Configuracion implements OnInit {
     this.mensaje.set('');
     this.error.set('');
 
-    this.api.actualizarConfiguracion(cambios).subscribe({
+    this.configuracionService.actualizarConfiguracion(cambios).subscribe({
       next: () => {
         this.guardando.set(false);
         this.mensaje.set('Configuracion guardada correctamente.');
@@ -158,6 +163,7 @@ export class Configuracion implements OnInit {
           this.mensaje.set('Respaldo restaurado correctamente.');
           this.confirmacionRestaurar.set('');
           this.archivoRestaurar.set(null);
+          this.configuracionService.invalidar(); // restaurarRespaldo tambien reemplaza 'configuracion'
           this.cargar();
         },
         error: (err) => {

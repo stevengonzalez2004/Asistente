@@ -1,5 +1,5 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ApiService } from '../../../../core/api.service';
@@ -17,6 +17,7 @@ export interface UserStatsDialogData {
   imports: [CommonModule, DecimalPipe, MatDialogModule, MatButtonModule, ChartCard, Skeleton],
   templateUrl: './user-stats-dialog.html',
   styleUrl: './user-stats-dialog.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserStatsDialog implements OnInit {
   private readonly api = inject(ApiService);

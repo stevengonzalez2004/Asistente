@@ -6,11 +6,8 @@
         </div>
     </header>
 
-    @if (mensaje()) {
-    <p class="notice success">{{ mensaje() }}</p>
-    } @if (error()) {
-    <p class="notice danger">{{ error() }}</p>
-    }
+    <app-notice tipo="success" [mensaje]="mensaje()" />
+    <app-notice tipo="danger" [mensaje]="error()" />
 
     @if (cargando()) {
     <app-skeleton variant="text" height="18px" />

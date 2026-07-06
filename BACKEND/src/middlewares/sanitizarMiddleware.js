@@ -1,0 +1,29 @@
+/**
+ * @file sanitizarMiddleware.js
+ * @description Sanitizacion defensiva global de `req.body`/`req.query`/`req.params`: limpia
+ * constructos HTML/script peligrosos (via la libreria `xss`) de forma recursiva. Deliberadamente
+ * NO usa `express-validator`'s `.escape()` (codifica entidades HTML como `&` -> `&amp;`, lo que
+ * causaria doble-escapado al mostrarse en Angular, que ya auto-escapa el texto interpolado).
+ */
+const xss = require('xss');
+
+function sanitizarProfundo(valor) {
+    if (typeof valor === 'string') return xss(valor);
+    if (Array.isArray(valor)) return valor.map(sanitizarProfundo);
+    if (valor && typeof valor === 'object') {
+        for (const clave of Object.keys(valor)) {
+            valor[clave] = sanitizarProfundo(valor[clave]);
+        }
+        return valor;
+    }
+    return valor;
+}
+
+function sanitizarMiddleware(req, res, next) {
+    if (req.body) req.body = sanitizarProfundo(req.body);
+    if (req.query) sanitizarProfundo(req.query);
+    if (req.params) req.params = sanitizarProfundo(req.params);
+    next();
+}
+
+module.exports = sanitizarMiddleware;

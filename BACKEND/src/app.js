@@ -7,14 +7,29 @@ const morgan = require('morgan');
 const apiRoutes = require('./routes/index');
 
 const errorMiddleware = require('./middlewares/errorMiddleware');
+const sanitizarMiddleware = require('./middlewares/sanitizarMiddleware');
+const { limiterGlobal } = require('./middlewares/rateLimitMiddleware');
 
 const app = express();
 
+// Necesario para que express-rate-limit lea X-Forwarded-For correctamente detras de un proxy
+// (Render/Railway/Nginx). Inofensivo en desarrollo local, donde no hay proxy delante.
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
 // Middlewares obligatorios de seguridad y formato
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false, // API JSON pura, nunca sirve HTML - CSP no aporta aqui
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // permite que el SPA en otro origen
+                                                            // consuma las respuestas via fetch/XHR
+    hsts: { maxAge: 15552000, includeSubDomains: true },
+    referrerPolicy: { policy: 'no-referrer' },
+}));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(sanitizarMiddleware);
 
 // Logging de peticiones HTTP
 if (process.env.NODE_ENV === 'production') {
@@ -32,7 +47,7 @@ app.get('/', (req, res) => {
 });
 
 // 2. Conectamos el enrutador centralizado bajo el prefijo /api
-app.use('/api', apiRoutes);
+app.use('/api', limiterGlobal, apiRoutes);
 
 // Manejo de rutas inexistentes (404) 
 app.use((req, res, next) => {

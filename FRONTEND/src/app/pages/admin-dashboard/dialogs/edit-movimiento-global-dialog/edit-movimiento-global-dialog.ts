@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -16,6 +16,7 @@ export interface EditMovimientoGlobalDialogData {
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   templateUrl: './edit-movimiento-global-dialog.html',
   styleUrl: './edit-movimiento-global-dialog.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditMovimientoGlobalDialog {
   private readonly dialogRef = inject(MatDialogRef<EditMovimientoGlobalDialog, MovimientoPayload>);

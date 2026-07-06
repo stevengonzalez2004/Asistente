@@ -5,6 +5,7 @@
  * necesitan los exportadores (CSV/Excel/PDF) y el grafico del PDF. Reubicado sin cambios desde
  * reportesAdminController.js (antes vivia inline en el controlador).
  */
+const { neutralizarCeldaTexto } = require('../utils/csv');
 
 /**
  * @param {string} fechaIso
@@ -38,20 +39,21 @@ function tablaParaExportar(tipo, datos) {
         case 'top-usuarios':
             return {
                 encabezados: ['Usuario', 'Correo', 'Cantidad movimientos', 'Monto total'],
-                filas: datos.map((d) => [d.nombre, d.correo, d.cantidad_movimientos, d.monto_total]),
+                filas: datos.map((d) => [neutralizarCeldaTexto(d.nombre), neutralizarCeldaTexto(d.correo), d.cantidad_movimientos, d.monto_total]),
             };
         case 'top-categorias':
             return {
                 encabezados: ['Categoria', 'Cantidad', 'Monto total'],
-                filas: datos.map((d) => [d.categoria, d.cantidad, d.monto_total]),
+                filas: datos.map((d) => [neutralizarCeldaTexto(d.categoria), d.cantidad, d.monto_total]),
             };
         case 'movimientos-usuario':
         case 'movimientos-fecha':
             return {
                 encabezados: ['ID', 'Fecha', 'Usuario', 'Correo', 'Categoria', 'Tipo', 'Monto', 'Descripcion', 'Estado'],
                 filas: datos.map((m) => [
-                    m.id, m.fecha, m.usuario_nombre, m.usuario_correo, m.categoria, m.tipo, m.monto,
-                    m.descripcion, m.deleted_at ? 'Eliminado' : 'Activo',
+                    m.id, m.fecha, neutralizarCeldaTexto(m.usuario_nombre), neutralizarCeldaTexto(m.usuario_correo),
+                    neutralizarCeldaTexto(m.categoria), m.tipo, m.monto,
+                    neutralizarCeldaTexto(m.descripcion), m.deleted_at ? 'Eliminado' : 'Activo',
                 ]),
             };
         case 'comparativas':

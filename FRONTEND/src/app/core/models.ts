@@ -44,7 +44,13 @@ export interface BalanceUsuario {
 export interface LoginResponse {
   message: string;
   token: string;
+  refreshToken: string;
   usuario: Usuario;
+}
+
+export interface RefreshResponse {
+  message: string;
+  token: string;
 }
 
 export interface ApiResponse<T> {
@@ -316,4 +322,25 @@ export interface RespaldoPayload {
   movimientos: unknown[];
   configuracion: unknown[];
   exportado_en?: string;
+}
+
+// ==========================================
+// Módulo IA (Asistente financiero personal)
+// ==========================================
+
+export interface IaMeta {
+  movimientos_analizados: number;
+  periodo_desde: string | null;
+  periodo_hasta: string | null;
+}
+
+export interface IaRespuesta {
+  respuesta: string;
+  meta: IaMeta;
+}
+
+export interface IaChatMensaje {
+  rol: 'user' | 'ia';
+  texto: string;
+  timestamp: string;
 }

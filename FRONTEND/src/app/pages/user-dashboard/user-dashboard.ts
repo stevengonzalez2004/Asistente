@@ -1,18 +1,20 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Cuenta, Movimiento } from '../../core/models';
+import { Notice } from '../../shared/notice/notice';
 
 type UserSection = 'cuentas' | 'movimientos' | 'crear-cuenta' | 'nuevo-movimiento';
 type TipoMovimiento = 'INGRESO' | 'GASTO' | 'TRANSFERENCIA';
 
 @Component({
   selector: 'app-user-dashboard',
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, DecimalPipe],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, DecimalPipe, Notice],
   templateUrl: './user-dashboard.html',
   styleUrl: './user-dashboard.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserDashboard implements OnInit {
   private readonly api = inject(ApiService);

@@ -4,16 +4,14 @@
     <mat-dialog-content class="edit-user-grid">
         <mat-form-field appearance="outline">
             <mat-label>Nombre</mat-label>
-            <input matInput formControlName="nombre" placeholder="Nombre del usuario" />
-            @if (form.controls.nombre.hasError('maxlength')) {
+            <input matInput formControlName="nombre" placeholder="Nombre del usuario" /> @if (form.controls.nombre.hasError('maxlength')) {
             <mat-error>El nombre es demasiado largo.</mat-error>
             }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
             <mat-label>Correo</mat-label>
-            <input matInput type="email" formControlName="correo" placeholder="correo@dominio.com" />
-            @if (form.controls.correo.hasError('required')) {
+            <input matInput type="email" formControlName="correo" placeholder="correo@dominio.com" /> @if (form.controls.correo.hasError('required')) {
             <mat-error>El correo es obligatorio.</mat-error>
             } @else if (form.controls.correo.hasError('email')) {
             <mat-error>Ingresa un correo válido.</mat-error>

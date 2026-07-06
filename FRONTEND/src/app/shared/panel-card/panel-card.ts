@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [CommonModule, MatIconModule],
   templateUrl: './panel-card.html',
   styleUrl: './panel-card.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PanelCard {
   @Input({ required: true }) titulo!: string;

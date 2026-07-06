@@ -1,4 +1,6 @@
 const groqService = require('./groqService');
+const movimientosModel = require('../models/movimientosModel');
+const adminModel = require('../models/adminModel');
 const logger = require('../utils/logger');
 
 class IaService {
@@ -292,6 +294,277 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura (sin 
         descripcion: 'Error al analizar procedencia, procediendo con forzado'
       };
     }
+  }
+
+  // ==========================================
+  // MÓDULO IA (Preguntar/Analizar/Predecir/Aconsejar) — self-service, panel web
+  // ==========================================
+
+  /** @param {string|undefined} rol @returns {boolean} */
+  _esAdmin(rol) {
+    return ['ADMIN', 'ADMINISTRADOR'].includes(String(rol || '').toUpperCase());
+  }
+
+  /**
+   * Elige la fuente de datos financieros según el rol: un Administrador recibe datos
+   * GLOBALES agregados de todos los usuarios (igual alcance que Reportes/Estadísticas admin);
+   * un Usuario recibe únicamente sus propios datos (self-service, sin cambios).
+   * @param {number} usuarioId
+   * @param {string} [rol]
+   */
+  async _obtenerContexto(usuarioId, rol) {
+    return this._esAdmin(rol) ? this._obtenerContextoGlobalAdmin() : this._obtenerContextoFinanciero(usuarioId);
+  }
+
+  /**
+   * Reúne datos financieros GLOBALES (todos los usuarios) para el rol Administrador,
+   * reutilizando adminModel (mismas fuentes que el Dashboard Administrativo) y
+   * movimientosModel.listarMovimientosGlobalPaginado (sin usuarioId => todos los usuarios).
+   * @returns {Promise<object>}
+   */
+  async _obtenerContextoGlobalAdmin() {
+    const [estadisticas, dashboard, movimientosGlobal] = await Promise.allSettled([
+      adminModel.obtenerEstadisticasGenerales(),
+      adminModel.obtenerMetricasDashboard(),
+      movimientosModel.listarMovimientosGlobalPaginado({ page: 1, limit: 100, sortBy: 'fecha', sortDir: 'desc', estado: 'activo' }),
+    ]);
+
+    const valorO = (resultado, porDefecto) => {
+      if (resultado.status === 'fulfilled') return resultado.value;
+      logger.warn('Fuente de datos globales no disponible para IA, se usa valor por defecto:', resultado.reason?.message || resultado.reason);
+      return porDefecto;
+    };
+
+    const estadisticasGenerales = valorO(estadisticas, {});
+    const dashboardData = valorO(dashboard, null);
+    const historialGlobal = valorO(movimientosGlobal, { data: [] }).data || [];
+    const { historialPorMes, periodoCubierto } = this._agregarHistorialPorMes(historialGlobal);
+
+    return {
+      alcance: 'global_administrador',
+      usuariosRegistrados: estadisticasGenerales.usuariosRegistrados ?? null,
+      movimientosTotales: estadisticasGenerales.movimientosTotales ?? null,
+      kpis: dashboardData?.kpis ?? null,
+      categoriasMasUsadas: dashboardData?.charts?.categoriasMasUsadas ?? [],
+      topUsuarios: dashboardData?.charts?.topUsuarios ?? [],
+      historialPorMes,
+      periodoCubierto,
+      movimientosCount: historialGlobal.length,
+    };
+  }
+
+  /**
+   * Antepone una aclaración de alcance GLOBAL al prompt cuando el rol es Administrador,
+   * para que la IA no confunda "datos de todos los usuarios" con "datos personales".
+   * @param {string} promptBase
+   * @param {string} [rol]
+   */
+  _conAclaracionDeAlcance(promptBase, rol) {
+    if (!this._esAdmin(rol)) return promptBase;
+    return `Estás analizando datos financieros GLOBALES agregados de TODOS los usuarios de la plataforma (no los de una sola persona). ${promptBase}`;
+  }
+
+  /**
+   * Reúne los datos financieros propios del usuario (mismos métodos que usa reportesController)
+   * y los agrega en un contexto único para fundamentar las respuestas de la IA.
+   * @param {number} usuarioId
+   * @returns {Promise<object>} { balanceTotal, cuentas, resumenMes, gastosCategoriaMes, historialPorMes, periodoCubierto, movimientosCount }
+   */
+  async _obtenerContextoFinanciero(usuarioId) {
+    // Promise.allSettled (no Promise.all): si una sola fuente de datos falla (ej. una función
+    // SQL con un bug preexistente ajeno a este módulo), las demás igual alimentan la respuesta
+    // en vez de tumbar las 7 funcionalidades de IA. Mismo patrón ya usado en
+    // usuariosController.obtenerEstadisticasUsuario.
+    const [balanceTotal, cuentas, resumenMes, gastosCategoriaMes, historial] = await Promise.allSettled([
+      movimientosModel.obtenerBalanceTotal(usuarioId),
+      movimientosModel.listarCuentas(usuarioId),
+      movimientosModel.obtenerResumenMes(usuarioId),
+      movimientosModel.obtenerGastosCategoriaMes(usuarioId),
+      movimientosModel.obtenerHistorial(usuarioId),
+    ]);
+
+    const valorO = (resultado, porDefecto) => {
+      if (resultado.status === 'fulfilled') return resultado.value;
+      logger.warn('Fuente de datos financieros no disponible para IA, se usa valor por defecto:', resultado.reason?.message || resultado.reason);
+      return porDefecto;
+    };
+
+    const historialRows = valorO(historial, []);
+    const { historialPorMes, periodoCubierto } = this._agregarHistorialPorMes(historialRows);
+
+    return {
+      balanceTotal: valorO(balanceTotal, 0),
+      cuentas: valorO(cuentas, []),
+      resumenMes: valorO(resumenMes, []),
+      gastosCategoriaMes: valorO(gastosCategoriaMes, []),
+      historialPorMes,
+      periodoCubierto,
+      movimientosCount: historialRows.length,
+    };
+  }
+
+  /**
+   * Agrupa en memoria (sin SQL nueva) el historial de movimientos por mes y categoría,
+   * usando `parseFloat` sobre `monto` (llega como string desde Postgres numeric).
+   * @param {object[]} historial Filas de movimientosModel.obtenerHistorial().
+   * @returns {{ historialPorMes: object[], periodoCubierto: {desde: string|null, hasta: string|null} }}
+   */
+  _agregarHistorialPorMes(historial) {
+    if (!historial || historial.length === 0) {
+      return { historialPorMes: [], periodoCubierto: { desde: null, hasta: null } };
+    }
+
+    const porMes = new Map();
+    let desde = historial[0].fecha;
+    let hasta = historial[0].fecha;
+
+    for (const mov of historial) {
+      const fecha = new Date(mov.fecha);
+      const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+      const monto = parseFloat(mov.monto) || 0;
+      const categoria = mov.categoria || 'Otros';
+
+      if (new Date(mov.fecha) < new Date(desde)) desde = mov.fecha;
+      if (new Date(mov.fecha) > new Date(hasta)) hasta = mov.fecha;
+
+      if (!porMes.has(mesKey)) {
+        porMes.set(mesKey, { mes: mesKey, totalIngresos: 0, totalGastos: 0, categorias: {} });
+      }
+      const bucket = porMes.get(mesKey);
+
+      if (mov.tipo === 'INGRESO') bucket.totalIngresos += monto;
+      if (mov.tipo === 'GASTO') {
+        bucket.totalGastos += monto;
+        bucket.categorias[categoria] = (bucket.categorias[categoria] || 0) + monto;
+      }
+    }
+
+    const historialPorMes = Array.from(porMes.values())
+      .sort((a, b) => a.mes.localeCompare(b.mes))
+      .map((bucket) => ({
+        mes: bucket.mes,
+        totalIngresos: Number(bucket.totalIngresos.toFixed(2)),
+        totalGastos: Number(bucket.totalGastos.toFixed(2)),
+        balance: Number((bucket.totalIngresos - bucket.totalGastos).toFixed(2)),
+        gastosPorCategoria: Object.entries(bucket.categorias).map(([categoria, monto]) => ({
+          categoria,
+          monto: Number(monto.toFixed(2)),
+        })),
+      }));
+
+    return { historialPorMes, periodoCubierto: { desde, hasta } };
+  }
+
+  /**
+   * Arma los mensajes (system + datos + hasta 10 turnos previos + mensaje del usuario) y
+   * llama a groqService.getChatCompletion en modo texto libre (sin jsonMode).
+   * @param {object} params
+   * @param {string} params.systemPrompt Instrucción de rol/tarea para la IA.
+   * @param {object} params.contexto Datos financieros ya agregados (de _obtenerContextoFinanciero).
+   * @param {string} params.mensajeUsuario Pregunta o disparador de la funcionalidad.
+   * @param {{rol:'user'|'ia', texto:string}[]} [params.historialChat] Turnos previos de la conversación.
+   * @param {number} [params.temperature]
+   * @param {number} [params.max_tokens]
+   * @returns {Promise<string>} Texto de respuesta de la IA.
+   */
+  async _generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario, historialChat = [], temperature = 0.3, max_tokens = 700 }) {
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'system', content: `Datos financieros del usuario (JSON): ${JSON.stringify(contexto)}` },
+    ];
+
+    for (const turno of historialChat.slice(-10)) {
+      messages.push({ role: turno.rol === 'ia' ? 'assistant' : 'user', content: turno.texto });
+    }
+
+    messages.push({ role: 'user', content: mensajeUsuario });
+
+    const rawResult = await groqService.getChatCompletion(messages, { temperature, max_tokens });
+    const respuesta = rawResult.choices[0]?.message?.content?.trim();
+    return respuesta || 'No se pudo generar una respuesta en este momento.';
+  }
+
+  /**
+   * Empaqueta una respuesta de texto junto con metadatos deterministas del contexto usado
+   * (cantidad de movimientos y periodo cubierto), para que el frontend pueda mostrar
+   * "basado en N movimientos entre X y Y" sin depender de que la IA lo mencione.
+   */
+  _conMeta(respuesta, contexto) {
+    return {
+      respuesta,
+      meta: {
+        movimientos_analizados: contexto.movimientosCount,
+        periodo_desde: contexto.periodoCubierto.desde,
+        periodo_hasta: contexto.periodoCubierto.hasta,
+      },
+    };
+  }
+
+  /**
+   * Responde una pregunta libre sobre finanzas: datos propios para Usuario, datos GLOBALES
+   * de todos los usuarios para Administrador.
+   * @param {number} usuarioId
+   * @param {string} pregunta
+   * @param {string} [rol] Rol del solicitante (determina el alcance de los datos).
+   * @param {{rol:'user'|'ia', texto:string}[]} [historialChat]
+   */
+  async responderPregunta(usuarioId, pregunta, rol, historialChat = []) {
+    const contexto = await this._obtenerContexto(usuarioId, rol);
+    const systemPrompt = this._conAclaracionDeAlcance('Eres un asesor financiero. Responde ÚNICAMENTE con base en los datos financieros que se te proveen a continuación. Si la pregunta requiere datos que no están disponibles, acláralo explícitamente en vez de inventar cifras. Responde en español, de forma clara y concisa.', rol);
+    const respuesta = await this._generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario: pregunta, historialChat });
+    return this._conMeta(respuesta, contexto);
+  }
+
+  /** Analiza los gastos por categoría y por mes (propios o globales según rol). @param {number} usuarioId @param {string} [rol] */
+  async analizarGastos(usuarioId, rol) {
+    const contexto = await this._obtenerContexto(usuarioId, rol);
+    const systemPrompt = this._conAclaracionDeAlcance('Eres un asesor financiero. Analiza los gastos por categoría y por mes usando los datos provistos: identifica la categoría dominante, variaciones relevantes entre meses y la concentración del gasto. Responde en español, en un párrafo claro más una breve lista si aplica.', rol);
+    const respuesta = await this._generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario: 'Analiza los gastos.' });
+    return this._conMeta(respuesta, contexto);
+  }
+
+  /** Analiza los ingresos: fuentes, estabilidad y tendencia (propios o globales según rol). @param {number} usuarioId @param {string} [rol] */
+  async analizarIngresos(usuarioId, rol) {
+    const contexto = await this._obtenerContexto(usuarioId, rol);
+    const systemPrompt = this._conAclaracionDeAlcance('Eres un asesor financiero. Analiza los ingresos: sus fuentes/categorías, estabilidad y tendencia frente a meses anteriores, usando los datos provistos. Responde en español, en un párrafo claro.', rol);
+    const respuesta = await this._generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario: 'Analiza los ingresos.' });
+    return this._conMeta(respuesta, contexto);
+  }
+
+  /** Identifica categorías de gasto potencialmente prescindibles (propias o globales según rol). @param {number} usuarioId @param {string} [rol] */
+  async detectarGastosInnecesarios(usuarioId, rol) {
+    const contexto = await this._obtenerContexto(usuarioId, rol);
+    const systemPrompt = this._conAclaracionDeAlcance('Eres un asesor financiero. Con base en el historial de gastos por categoría y mes, identifica categorías de gasto potencialmente prescindibles (ej. entretenimiento, compras, comida fuera) y sugiere un monto aproximado de ahorro posible. Aclara explícitamente que el análisis se basa solo en los movimientos disponibles y puede no reflejar toda la realidad financiera. Responde en español.', rol);
+    const respuesta = await this._generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario: 'Detecta posibles gastos innecesarios.' });
+    return this._conMeta(respuesta, contexto);
+  }
+
+  /** Genera un reporte financiero narrativo (resumen + puntos clave; propio o global según rol). @param {number} usuarioId @param {string} [rol] */
+  async generarReporteNarrativo(usuarioId, rol) {
+    const contexto = await this._obtenerContexto(usuarioId, rol);
+    const systemPrompt = this._conAclaracionDeAlcance('Eres un asesor financiero. Redacta un reporte financiero ejecutivo en español, con un resumen inicial y de 3 a 5 puntos clave, usando únicamente los datos provistos. Usa un tono profesional y claro.', rol);
+    const respuesta = await this._generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario: 'Genera un reporte financiero de la situación actual.' });
+    return this._conMeta(respuesta, contexto);
+  }
+
+  /** Proyecta el comportamiento financiero probable de los próximos 1-2 meses (propio o global según rol). @param {number} usuarioId @param {string} [rol] */
+  async generarPrediccion(usuarioId, rol) {
+    const contexto = await this._obtenerContexto(usuarioId, rol);
+    const mesesDistintos = contexto.historialPorMes.length;
+    const promptBase = mesesDistintos >= 2
+      ? 'Eres un asesor financiero. Con base en la tendencia mensual histórica de ingresos y gastos provista, proyecta el comportamiento probable de los próximos 1-2 meses (gasto, ingreso y balance estimado). Deja explícito que es una estimación basada en datos limitados, no una garantía. Responde en español.'
+      : 'Eres un asesor financiero. Los datos disponibles cubren un solo periodo o menos, insuficientes para una predicción confiable de tendencia. Explica esto claramente y sugiere qué se necesitaría (más historial) para obtener una predicción útil, sin inventar una proyección numérica arriesgada. Responde en español.';
+    const systemPrompt = this._conAclaracionDeAlcance(promptBase, rol);
+    const respuesta = await this._generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario: 'Dame una predicción financiera para los próximos meses.' });
+    return this._conMeta(respuesta, contexto);
+  }
+
+  /** Genera consejos financieros personalizados y accionables (propios o globales según rol). @param {number} usuarioId @param {string} [rol] */
+  async generarConsejos(usuarioId, rol) {
+    const contexto = await this._obtenerContexto(usuarioId, rol);
+    const systemPrompt = this._conAclaracionDeAlcance('Eres un asesor financiero. Genera de 3 a 5 consejos financieros personalizados, accionables y priorizados según la situación real reflejada en los datos provistos. Responde en español, en una lista breve.', rol);
+    const respuesta = await this._generarRespuestaIA({ systemPrompt, contexto, mensajeUsuario: 'Dame consejos financieros personalizados.' });
+    return this._conMeta(respuesta, contexto);
   }
 }
 

@@ -2,6 +2,7 @@
 const configuracionModel = require('../models/configuracionModel');
 const logger = require('../utils/logger');
 const { mapConfiguracionAdmin, mapConfiguracionPublica } = require('../dtos/configuracionDto');
+const { registrarAuditoria } = require('../utils/auditoria');
 
 const TABLAS_ESPERADAS = ['usuarios', 'tipos_movimiento', 'categorias', 'cuentas', 'movimientos', 'configuracion'];
 
@@ -47,6 +48,8 @@ class ConfiguracionController {
             }
 
             const config = await configuracionModel.actualizarConfiguracion(cambios);
+            logger.info(`Configuracion actualizada por admin ${req.usuario.id}: claves [${Object.keys(cambios).join(', ')}].`);
+            await registrarAuditoria(req, { accion: 'CONFIG_ACTUALIZADA', entidad: 'configuracion', detalle: { claves: Object.keys(cambios) } });
             return res.status(200).json({ success: true, message: 'Configuracion actualizada correctamente.', data: mapConfiguracionAdmin(config) });
         } catch (error) {
             logger.error('Error al actualizar configuracion:', error);
@@ -62,6 +65,8 @@ class ConfiguracionController {
         try {
             const datos = await configuracionModel.exportarDatos();
             const fecha = new Date().toISOString().slice(0, 10);
+            logger.info(`Respaldo completo exportado por admin ${req.usuario.id}.`);
+            await registrarAuditoria(req, { accion: 'RESPALDO_EXPORTADO', entidad: 'configuracion' });
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
             res.setHeader('Content-Disposition', `attachment; filename="respaldo-${fecha}.json"`);
             return res.status(200).send(JSON.stringify(datos, null, 2));
@@ -101,6 +106,8 @@ class ConfiguracionController {
             }
 
             await configuracionModel.restaurarDatos(datos);
+            logger.info(`Respaldo completo RESTAURADO por admin ${req.usuario.id} (todas las tablas reemplazadas).`);
+            await registrarAuditoria(req, { accion: 'RESPALDO_RESTAURADO', entidad: 'configuracion' });
             return res.status(200).json({ success: true, message: 'Respaldo restaurado correctamente.' });
         } catch (error) {
             logger.error('Error al restaurar respaldo:', error);

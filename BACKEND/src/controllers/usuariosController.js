@@ -3,6 +3,7 @@ const usuariosModel = require('../models/usuariosModel');
 const movimientosModel = require('../models/movimientosModel');
 const logger = require('../utils/logger');
 const { mapUsuario, mapUsuarios } = require('../dtos/usuarioDto');
+const { registrarAuditoria } = require('../utils/auditoria');
 
 class UsuariosController {
     /**
@@ -87,6 +88,7 @@ class UsuariosController {
             if (resultado.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
 
             logger.info(`Usuario ${idUsuario} actualizado por admin.`);
+            await registrarAuditoria(req, { accion: 'USUARIO_ACTUALIZADO', entidad: 'usuarios', entidadId: idUsuario, detalle: { campos: Object.keys(datos) } });
             res.status(200).json({
                 success: true,
                 data: mapUsuario(resultado.rows[0]),
@@ -100,18 +102,33 @@ class UsuariosController {
     }
 
     /**
-     * Lista el historial de movimientos de un usuario (vista administrativa).
+     * Lista el historial de movimientos de un usuario (vista administrativa). Sin
+     * `page`/`limit`, mantiene el comportamiento actual (ultimos 100, sin meta).
      * @route GET /api/usuarios/:id/movimientos
      */
     async listarMovimientosUsuario(req, res, next) {
         try {
             const idUsuario = parseInt(req.params.id);
+            const { page, limit } = req.query;
 
             const existe = await usuariosModel.ObtenerUsuarioPorIdAdmin(idUsuario);
             if (existe.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-            const historial = await movimientosModel.obtenerHistorialPorUsuarioAdmin(idUsuario);
-            res.status(200).json({ success: true, data: historial });
+            if (page === undefined && limit === undefined) {
+                const historial = await movimientosModel.obtenerHistorialPorUsuarioAdmin(idUsuario);
+                return res.status(200).json({ success: true, data: historial });
+            }
+
+            const resultado = await movimientosModel.obtenerHistorialPaginado({
+                usuarioId: idUsuario,
+                page: parseInt(page) || 1,
+                limit: Math.min(parseInt(limit) || 100, 100),
+            });
+            res.status(200).json({
+                success: true,
+                data: resultado.data,
+                meta: { total: resultado.total, page: resultado.page, limit: resultado.limit },
+            });
         } catch (error) {
             logger.error('Error al listar movimientos de usuario:', error);
             next(error);
@@ -165,6 +182,7 @@ class UsuariosController {
             });
 
             logger.info(`Movimiento ${idMovimiento} del usuario ${idUsuario} actualizado por admin.`);
+            await registrarAuditoria(req, { accion: 'MOVIMIENTO_EDITADO_ADMIN', entidad: 'movimientos', entidadId: idMovimiento, detalle: { usuarioAfectado: idUsuario } });
             res.status(200).json({
                 success: true,
                 data: movimiento,
@@ -187,6 +205,7 @@ class UsuariosController {
 
             const resultado = await movimientosModel.eliminarMovimientoWeb(idMovimiento, idUsuario);
             logger.info(`Movimiento ${idMovimiento} del usuario ${idUsuario} eliminado por admin.`);
+            await registrarAuditoria(req, { accion: 'MOVIMIENTO_ELIMINADO_ADMIN', entidad: 'movimientos', entidadId: idMovimiento, detalle: { usuarioAfectado: idUsuario } });
             res.status(200).json({ success: true, message: resultado.message });
         } catch (error) {
             logger.error('Error al eliminar movimiento de usuario:', error);
@@ -207,6 +226,7 @@ class UsuariosController {
 
             await usuariosModel.DeshabilitarUsuario(idUsuario);
             logger.info(`Usuario ${idUsuario} deshabilitado por admin.`);
+            await registrarAuditoria(req, { accion: 'USUARIO_DESHABILITADO', entidad: 'usuarios', entidadId: idUsuario });
             res.status(200).json({ success: true, message: 'Usuario deshabilitado correctamente' });
         } catch (error) {
             logger.error('Error al deshabilitar usuario:', error);
@@ -227,6 +247,7 @@ class UsuariosController {
 
             const resultado = await usuariosModel.ReactivarUsuario(idUsuario);
             logger.info(`Usuario ${idUsuario} reactivado por admin.`);
+            await registrarAuditoria(req, { accion: 'USUARIO_REACTIVADO', entidad: 'usuarios', entidadId: idUsuario });
             res.status(200).json({ success: true, data: mapUsuario(resultado.rows[0]), message: 'Usuario reactivado correctamente' });
         } catch (error) {
             logger.error('Error al reactivar usuario:', error);
@@ -250,6 +271,7 @@ class UsuariosController {
             if (resultado.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
 
             logger.info(`Password del usuario ${idUsuario} restablecida por admin.`);
+            await registrarAuditoria(req, { accion: 'PASSWORD_RESET_ADMIN', entidad: 'usuarios', entidadId: idUsuario });
             res.status(200).json({ success: true, message: 'Contrasena restablecida correctamente' });
         } catch (error) {
             logger.error('Error al restablecer password de usuario:', error);

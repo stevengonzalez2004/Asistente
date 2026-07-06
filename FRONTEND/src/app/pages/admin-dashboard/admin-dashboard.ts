@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
@@ -21,6 +21,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { DashboardCacheService } from '../../core/dashboard-cache.service';
 import {
   BalanceAnual,
   BalanceUsuario,
@@ -52,6 +53,8 @@ import {
   buildMovimientosPorDiaOptions,
   buildTopUsuariosOptions,
 } from '../../shared/chart-card/chart-builders';
+import { AppPaginator } from '../../shared/app-paginator/app-paginator';
+import { Notice } from '../../shared/notice/notice';
 import { PanelCard } from '../../shared/panel-card/panel-card';
 import { Skeleton } from '../../shared/skeleton/skeleton';
 import { StatCard, StatCardAccent } from '../../shared/stat-card/stat-card';
@@ -146,7 +149,6 @@ const TIPOS_REPORTE: { value: ReporteTipo; label: string }[] = [
     MatInputModule,
     MatListModule,
     MatMenuModule,
-    MatPaginatorModule,
     MatSelectModule,
     MatSortModule,
     MatTableModule,
@@ -156,14 +158,18 @@ const TIPOS_REPORTE: { value: ReporteTipo; label: string }[] = [
     PanelCard,
     Skeleton,
     ChartCard,
+    Notice,
+    AppPaginator,
   ],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminDashboard implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly dashboardCache = inject(DashboardCacheService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
@@ -538,7 +544,7 @@ export class AdminDashboard implements OnInit {
     this.cargandoDashboard.set(true);
     this.errorDashboard.set('');
 
-    this.api.obtenerDashboardAdmin().subscribe({
+    this.dashboardCache.obtenerDashboardAdmin().subscribe({
       next: (data) => {
         this.dashboardData.set(data);
         this.cargandoDashboard.set(false);
@@ -625,7 +631,7 @@ export class AdminDashboard implements OnInit {
   }
 
   cargarCategoriasDisponibles(): void {
-    this.api.listarCategoriasGlobal().subscribe({
+    this.dashboardCache.listarCategoriasGlobal().subscribe({
       next: (categorias) => this.categoriasDisponibles.set(categorias),
       error: (err) => this.error.set(err?.error?.message || 'No se pudieron cargar las categorías.'),
     });

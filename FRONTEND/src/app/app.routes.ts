@@ -1,18 +1,35 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/admin.guard';
+import { authGuard } from './core/auth.guard';
 import { userGuard } from './core/user.guard';
-import { AdminDashboard } from './pages/admin-dashboard/admin-dashboard';
-import { Configuracion } from './pages/configuracion/configuracion';
-import { Estadisticas } from './pages/estadisticas/estadisticas';
-import { Login } from './pages/login/login';
-import { UserDashboard } from './pages/user-dashboard/user-dashboard';
 
 export const routes: Routes = [
-  { path: 'login', component: Login },
-  { path: 'admin', component: AdminDashboard, canActivate: [adminGuard] },
-  { path: 'estadisticas', component: Estadisticas, canActivate: [adminGuard] },
-  { path: 'configuracion', component: Configuracion, canActivate: [adminGuard] },
-  { path: 'usuario', component: UserDashboard, canActivate: [userGuard] },
+  { path: 'login', loadComponent: () => import('./pages/login/login').then((m) => m.Login) },
+  {
+    path: 'admin',
+    loadComponent: () => import('./pages/admin-dashboard/admin-dashboard').then((m) => m.AdminDashboard),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'estadisticas',
+    loadComponent: () => import('./pages/estadisticas/estadisticas').then((m) => m.Estadisticas),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'configuracion',
+    loadComponent: () => import('./pages/configuracion/configuracion').then((m) => m.Configuracion),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'ia',
+    loadComponent: () => import('./pages/ia/ia').then((m) => m.Ia),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'usuario',
+    loadComponent: () => import('./pages/user-dashboard/user-dashboard').then((m) => m.UserDashboard),
+    canActivate: [userGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: '**', redirectTo: 'login' },
 ];

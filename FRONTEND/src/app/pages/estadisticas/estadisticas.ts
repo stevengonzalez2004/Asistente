@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, OnInit, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { ApiService } from '../../core/api.service';
+import { DashboardCacheService } from '../../core/dashboard-cache.service';
 import { CategoriaUsada, DashboardAdminData, MovimientoGlobal, ReporteData, UsuarioTop } from '../../core/models';
 import { ChartCard } from '../../shared/chart-card/chart-card';
 import {
@@ -14,18 +15,21 @@ import {
   buildTendenciaLineOptions,
   buildUsuariosDonutOptions,
 } from '../../shared/chart-card/chart-builders';
+import { Notice } from '../../shared/notice/notice';
 import { PanelCard } from '../../shared/panel-card/panel-card';
 import { Skeleton } from '../../shared/skeleton/skeleton';
 import { StatCard } from '../../shared/stat-card/stat-card';
 
 @Component({
   selector: 'app-estadisticas',
-  imports: [CommonModule, MatIconModule, MatListModule, ChartCard, PanelCard, Skeleton, StatCard],
+  imports: [CommonModule, MatIconModule, MatListModule, ChartCard, PanelCard, Skeleton, StatCard, Notice],
   templateUrl: './estadisticas.html',
   styleUrl: './estadisticas.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Estadisticas implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly dashboardCache = inject(DashboardCacheService);
 
   readonly cargando = signal(true);
   readonly error = signal('');
@@ -78,7 +82,7 @@ export class Estadisticas implements OnInit {
     this.cargando.set(true);
     this.error.set('');
 
-    this.api.obtenerDashboardAdmin().subscribe({
+    this.dashboardCache.obtenerDashboardAdmin().subscribe({
       next: (data) => {
         this.dashboardData.set(data);
         this.cargando.set(false);

@@ -9,6 +9,8 @@ import {
   Cuenta,
   DashboardAdminData,
   EstadisticasUsuario,
+  IaChatMensaje,
+  IaRespuesta,
   ListarMovimientosGlobalesParams,
   ListarUsuariosParams,
   Movimiento,
@@ -210,5 +212,47 @@ export class ApiService {
 
   restaurarRespaldo(datos: RespaldoPayload, confirmacion: string): Observable<ApiResponse<null>> {
     return this.http.post<ApiResponse<null>>(`${API_URL}/configuracion/respaldo/restaurar`, { datos, confirmacion });
+  }
+
+  preguntarIA(pregunta: string, historial: IaChatMensaje[] = []): Observable<IaRespuesta> {
+    return this.http
+      .post<ApiResponse<IaRespuesta>>(`${API_URL}/ia/preguntar`, { pregunta, historial })
+      .pipe(map((response) => response.data));
+  }
+
+  analizarGastosIA(): Observable<IaRespuesta> {
+    return this.http
+      .get<ApiResponse<IaRespuesta>>(`${API_URL}/ia/analizar-gastos`)
+      .pipe(map((response) => response.data));
+  }
+
+  analizarIngresosIA(): Observable<IaRespuesta> {
+    return this.http
+      .get<ApiResponse<IaRespuesta>>(`${API_URL}/ia/analizar-ingresos`)
+      .pipe(map((response) => response.data));
+  }
+
+  detectarGastosInnecesariosIA(): Observable<IaRespuesta> {
+    return this.http
+      .get<ApiResponse<IaRespuesta>>(`${API_URL}/ia/gastos-innecesarios`)
+      .pipe(map((response) => response.data));
+  }
+
+  generarReporteIA(): Observable<IaRespuesta> {
+    return this.http
+      .get<ApiResponse<IaRespuesta>>(`${API_URL}/ia/reporte`)
+      .pipe(map((response) => response.data));
+  }
+
+  generarPrediccionIA(): Observable<IaRespuesta> {
+    return this.http
+      .get<ApiResponse<IaRespuesta>>(`${API_URL}/ia/prediccion`)
+      .pipe(map((response) => response.data));
+  }
+
+  generarConsejosIA(): Observable<IaRespuesta> {
+    return this.http
+      .get<ApiResponse<IaRespuesta>>(`${API_URL}/ia/consejos`)
+      .pipe(map((response) => response.data));
   }
 }
