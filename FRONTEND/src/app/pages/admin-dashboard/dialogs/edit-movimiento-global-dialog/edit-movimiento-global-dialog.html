@@ -1,0 +1,45 @@
+<h2 mat-dialog-title>Editar movimiento #{{ data.movimiento.id }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="guardar()">
+    <mat-dialog-content class="edit-movimiento-grid">
+        <mat-form-field appearance="outline">
+            <mat-label>Categoría</mat-label>
+            <input matInput formControlName="categoria" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Monto</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" formControlName="monto" />
+            @if (form.controls.monto.hasError('required')) {
+            <mat-error>El monto es obligatorio.</mat-error>
+            } @else if (form.controls.monto.hasError('min')) {
+            <mat-error>El monto debe ser mayor a 0.</mat-error>
+            }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Cuenta origen</mat-label>
+            <input matInput formControlName="cuenta_origen" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Cuenta destino</mat-label>
+            <input matInput formControlName="cuenta_destino" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Método de pago</mat-label>
+            <input matInput formControlName="metodo_pago" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full">
+            <mat-label>Descripción</mat-label>
+            <textarea matInput rows="3" formControlName="descripcion"></textarea>
+        </mat-form-field>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+        <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+        <button mat-raised-button color="primary" type="submit">Guardar</button>
+    </mat-dialog-actions>
+</form>

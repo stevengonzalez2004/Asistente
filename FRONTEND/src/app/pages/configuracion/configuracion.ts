@@ -1,0 +1,203 @@
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ApiService } from '../../core/api.service';
+import { AuthService } from '../../core/auth.service';
+import { Configuracion as ConfiguracionModel, RespaldoPayload } from '../../core/models';
+import { PanelCard } from '../../shared/panel-card/panel-card';
+import { Skeleton } from '../../shared/skeleton/skeleton';
+
+@Component({
+  selector: 'app-configuracion',
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+    MatTooltipModule,
+    PanelCard,
+    Skeleton,
+  ],
+  templateUrl: './configuracion.html',
+  styleUrl: './configuracion.css',
+})
+export class Configuracion implements OnInit {
+  private readonly api = inject(ApiService);
+  private readonly authService = inject(AuthService);
+
+  readonly cargando = signal(true);
+  readonly guardando = signal(false);
+  readonly mensaje = signal('');
+  readonly error = signal('');
+
+  readonly nombreSistema = signal('');
+  readonly logoUrl = signal('');
+  readonly idioma = signal('es');
+  readonly moneda = signal('PEN');
+  readonly iaModelo = signal('');
+  readonly iaApiKey = signal('');
+  readonly telegramToken = signal('');
+
+  readonly confirmacionRestaurar = signal('');
+  readonly archivoRestaurar = signal<File | null>(null);
+  readonly restaurando = signal(false);
+
+  readonly nuevaPassword = signal('');
+  readonly confirmarPassword = signal('');
+  readonly cambiandoPassword = signal(false);
+
+  ngOnInit(): void {
+    this.cargar();
+  }
+
+  cargar(): void {
+    this.cargando.set(true);
+    this.error.set('');
+
+    this.api.obtenerConfiguracionAdmin().subscribe({
+      next: (config) => {
+        this.nombreSistema.set(config.nombre_sistema || '');
+        this.logoUrl.set(config.logo_url || '');
+        this.idioma.set(config.idioma || 'es');
+        this.moneda.set(config.moneda || 'PEN');
+        this.iaModelo.set(config.ia_modelo || '');
+        this.iaApiKey.set(config.ia_api_key || '');
+        this.telegramToken.set(config.telegram_bot_token || '');
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.cargando.set(false);
+        this.error.set(err?.error?.message || 'No se pudo cargar la configuracion.');
+      },
+    });
+  }
+
+  guardarIdiomaMoneda(): void {
+    this.guardar({ idioma: this.idioma(), moneda: this.moneda() });
+  }
+
+  guardarMarca(): void {
+    this.guardar({ nombre_sistema: this.nombreSistema(), logo_url: this.logoUrl() });
+  }
+
+  guardarIa(): void {
+    this.guardar({ ia_modelo: this.iaModelo(), ia_api_key: this.iaApiKey() });
+  }
+
+  guardarTelegram(): void {
+    this.guardar({ telegram_bot_token: this.telegramToken() });
+  }
+
+  private guardar(cambios: Partial<ConfiguracionModel>): void {
+    this.guardando.set(true);
+    this.mensaje.set('');
+    this.error.set('');
+
+    this.api.actualizarConfiguracion(cambios).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.mensaje.set('Configuracion guardada correctamente.');
+      },
+      error: (err) => {
+        this.guardando.set(false);
+        this.error.set(err?.error?.message || 'No se pudo guardar la configuracion.');
+      },
+    });
+  }
+
+  descargarRespaldo(): void {
+    this.api.exportarRespaldo().subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = `respaldo-${new Date().toISOString().slice(0, 10)}.json`;
+        enlace.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.error.set('No se pudo descargar el respaldo.'),
+    });
+  }
+
+  onArchivoSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.archivoRestaurar.set(input.files?.[0] ?? null);
+  }
+
+  restaurarRespaldo(): void {
+    const archivo = this.archivoRestaurar();
+    if (!archivo || this.confirmacionRestaurar() !== 'RESTAURAR') return;
+
+    this.restaurando.set(true);
+    this.error.set('');
+    this.mensaje.set('');
+
+    const lector = new FileReader();
+    lector.onload = () => {
+      let datos: RespaldoPayload;
+      try {
+        datos = JSON.parse(String(lector.result)) as RespaldoPayload;
+      } catch {
+        this.restaurando.set(false);
+        this.error.set('El archivo seleccionado no es un JSON valido.');
+        return;
+      }
+
+      this.api.restaurarRespaldo(datos, this.confirmacionRestaurar()).subscribe({
+        next: () => {
+          this.restaurando.set(false);
+          this.mensaje.set('Respaldo restaurado correctamente.');
+          this.confirmacionRestaurar.set('');
+          this.archivoRestaurar.set(null);
+          this.cargar();
+        },
+        error: (err) => {
+          this.restaurando.set(false);
+          this.error.set(err?.error?.message || 'No se pudo restaurar el respaldo.');
+        },
+      });
+    };
+    lector.readAsText(archivo);
+  }
+
+  cambiarPassword(): void {
+    const nueva = this.nuevaPassword();
+    if (nueva.length < 8) {
+      this.error.set('La nueva contrasena debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (nueva !== this.confirmarPassword()) {
+      this.error.set('Las contrasenas no coinciden.');
+      return;
+    }
+
+    const idAdmin = this.authService.usuario()?.id;
+    if (!idAdmin) return;
+
+    this.cambiandoPassword.set(true);
+    this.error.set('');
+    this.mensaje.set('');
+
+    this.api.restablecerPassword(idAdmin, nueva).subscribe({
+      next: () => {
+        this.cambiandoPassword.set(false);
+        this.mensaje.set('Contrasena actualizada correctamente.');
+        this.nuevaPassword.set('');
+        this.confirmarPassword.set('');
+      },
+      error: (err) => {
+        this.cambiandoPassword.set(false);
+        this.error.set(err?.error?.message || 'No se pudo actualizar la contrasena.');
+      },
+    });
+  }
+}

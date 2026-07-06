@@ -6,6 +6,7 @@
 const db = require('../config/db');
 const logger = require('../utils/logger');
 const movimientosQueries = require('../queries/movimientosQueries');
+const { crearConstructorCondiciones, construirResultadoPaginado } = require('../utils/queryBuilder');
 
 class MovimientosModel {
     /**
@@ -383,6 +384,67 @@ class MovimientosModel {
      */
     async obtenerHistorialPorUsuarioAdmin(usuarioId) {
         return await this.obtenerHistorial(usuarioId);
+    }
+
+    /**
+     * Lista movimientos de TODOS los usuarios, paginados/ordenables/filtrables, para administración.
+     * @param {object} opts { page, limit, sortBy, sortDir, usuarioId, categoria, tipo, montoMin, montoMax, estado, fechaDesde, fechaHasta, q }
+     */
+    async listarMovimientosGlobalPaginado({
+        page = 1, limit = 20, sortBy = 'fecha', sortDir = 'desc',
+        usuarioId, categoria, tipo, montoMin, montoMax, estado = 'activo',
+        fechaDesde, fechaHasta, q,
+    } = {}) {
+        const { condiciones, valores, agregar, paginar } = crearConstructorCondiciones();
+
+        if (estado === 'activo') condiciones.push('m.deleted_at IS NULL');
+        else if (estado === 'eliminado') condiciones.push('m.deleted_at IS NOT NULL');
+        // estado === 'todos' -> sin condición sobre deleted_at
+
+        if (usuarioId) agregar('u.id = ?', usuarioId);
+        if (categoria) agregar('cat.nombre = ?', categoria);
+        if (tipo) agregar('tm.nombre = ?', String(tipo).toUpperCase());
+        if (montoMin !== undefined && montoMin !== null && montoMin !== '' && !isNaN(montoMin)) {
+            agregar('m.monto >= ?', montoMin);
+        }
+        if (montoMax !== undefined && montoMax !== null && montoMax !== '' && !isNaN(montoMax)) {
+            agregar('m.monto <= ?', montoMax);
+        }
+        if (fechaDesde) agregar('m.fecha >= ?', fechaDesde);
+        if (fechaHasta) agregar('m.fecha < ?', fechaHasta);
+
+        if (q) {
+            agregar('(m.descripcion ILIKE ? OR u.nombre ILIKE ? OR u.correo ILIKE ? OR cat.nombre ILIKE ?)', `%${q}%`);
+        }
+
+        const ordenColumna = movimientosQueries.COLUMNAS_ORDENABLES_MOVIMIENTOS_GLOBAL[sortBy] || 'm.fecha';
+        const ordenDireccion = String(sortDir).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+        const { indexLimit, indexOffset } = paginar(page, limit);
+
+        const query = movimientosQueries.GENERAR_LISTADO_PAGINADO_MOVIMIENTOS_GLOBAL({
+            condiciones, ordenColumna, ordenDireccion, indexLimit, indexOffset,
+        });
+
+        const resultado = await db.query(query, valores);
+        return construirResultadoPaginado(resultado, page, limit);
+    }
+
+    /**
+     * Lista alfabética de nombres de categorías existentes (para el filtro del panel global).
+     */
+    async listarCategoriasDistintas() {
+        const res = await db.query(movimientosQueries.OBTENER_CATEGORIAS_DISTINCT);
+        return res.rows.map((r) => r.nombre);
+    }
+
+    /**
+     * Obtiene un movimiento completo por ID (activo únicamente) para operaciones de administración.
+     * @param {number} movimientoId
+     */
+    async obtenerMovimientoCompletoPorId(movimientoId) {
+        const res = await db.query(movimientosQueries.OBTENER_MOVIMIENTO_COMPLETO_POR_ID, [movimientoId]);
+        return res.rows[0] || null;
     }
 }
 

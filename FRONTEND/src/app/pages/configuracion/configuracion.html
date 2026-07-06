@@ -1,0 +1,155 @@
+<main class="configuracion-shell">
+    <header class="topbar">
+        <div>
+            <p>Administrador</p>
+            <h1>Configuración</h1>
+        </div>
+    </header>
+
+    @if (mensaje()) {
+    <p class="notice success">{{ mensaje() }}</p>
+    } @if (error()) {
+    <p class="notice danger">{{ error() }}</p>
+    }
+
+    @if (cargando()) {
+    <app-skeleton variant="text" height="18px" />
+    <app-skeleton variant="text" height="18px" />
+    <app-skeleton variant="text" height="18px" />
+    } @else {
+    <div class="config-grid">
+
+        <app-panel-card titulo="Idioma y Moneda" icon="language">
+            <p class="hint">Este valor es solo informativo: no cambia el idioma ni el formato de moneda mostrado en el resto del sistema.</p>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Idioma</mat-label>
+                <mat-select [value]="idioma()" (selectionChange)="idioma.set($event.value)">
+                    <mat-option value="es">Español</mat-option>
+                    <mat-option value="en">Inglés</mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Moneda</mat-label>
+                <mat-select [value]="moneda()" (selectionChange)="moneda.set($event.value)">
+                    <mat-option value="PEN">Sol (PEN)</mat-option>
+                    <mat-option value="USD">Dólar (USD)</mat-option>
+                    <mat-option value="EUR">Euro (EUR)</mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" type="button" [disabled]="guardando()" (click)="guardarIdiomaMoneda()">
+                Guardar idioma y moneda
+            </button>
+        </app-panel-card>
+
+        <app-panel-card titulo="Marca" icon="badge">
+            <mat-form-field appearance="outline">
+                <mat-label>Nombre del sistema</mat-label>
+                <input matInput [ngModel]="nombreSistema()" (ngModelChange)="nombreSistema.set($event)" placeholder="Asistente Financiero" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>URL del logo</mat-label>
+                <input matInput [ngModel]="logoUrl()" (ngModelChange)="logoUrl.set($event)" placeholder="https://..." />
+            </mat-form-field>
+
+            @if (logoUrl()) {
+            <div class="logo-preview">
+                <img [src]="logoUrl()" alt="Vista previa del logo" />
+            </div>
+            }
+
+            <button mat-raised-button color="primary" type="button" [disabled]="guardando()" (click)="guardarMarca()">
+                Guardar marca
+            </button>
+        </app-panel-card>
+
+        <app-panel-card titulo="Configuración IA" icon="smart_toy">
+            <p class="hint">Valores informativos: no reemplazan las variables de entorno del servidor de IA.</p>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Modelo</mat-label>
+                <input matInput [ngModel]="iaModelo()" (ngModelChange)="iaModelo.set($event)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>API Key</mat-label>
+                <input matInput [ngModel]="iaApiKey()" (ngModelChange)="iaApiKey.set($event)" />
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" type="button" [disabled]="guardando()" (click)="guardarIa()">
+                Guardar configuración IA
+            </button>
+        </app-panel-card>
+
+        <app-panel-card titulo="Configuración Telegram" icon="send">
+            <p class="hint">Valor informativo: no reemplaza la variable de entorno del bot de Telegram.</p>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Token del bot</mat-label>
+                <input matInput [ngModel]="telegramToken()" (ngModelChange)="telegramToken.set($event)" />
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" type="button" [disabled]="guardando()" (click)="guardarTelegram()">
+                Guardar configuración Telegram
+            </button>
+        </app-panel-card>
+
+        <app-panel-card titulo="Respaldo" icon="cloud_download">
+            <p class="hint">Descarga un archivo JSON con todos los datos del sistema (usuarios, cuentas, categorías, movimientos y configuración).</p>
+            <button mat-stroked-button type="button" (click)="descargarRespaldo()">
+                <mat-icon>download</mat-icon> Descargar respaldo
+            </button>
+        </app-panel-card>
+
+        <app-panel-card titulo="Restaurar respaldo" icon="restore">
+            <p class="hint danger-hint">Acción destructiva: reemplaza TODOS los datos actuales por el contenido del archivo. Esta acción no se puede deshacer.</p>
+
+            <div class="campo">
+                <input type="file" accept="application/json" (change)="onArchivoSeleccionado($event)" />
+            </div>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Escribe RESTAURAR para confirmar</mat-label>
+                <input matInput [ngModel]="confirmacionRestaurar()" (ngModelChange)="confirmacionRestaurar.set($event)" />
+            </mat-form-field>
+
+            <button
+                mat-raised-button
+                color="warn"
+                type="button"
+                [disabled]="!archivoRestaurar() || confirmacionRestaurar() !== 'RESTAURAR' || restaurando()"
+                (click)="restaurarRespaldo()"
+            >
+                Restaurar respaldo
+            </button>
+        </app-panel-card>
+
+        <app-panel-card titulo="Seguridad" icon="lock">
+            <p class="hint">Cambiar la contraseña de tu propia cuenta de administrador.</p>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Nueva contraseña</mat-label>
+                <input matInput type="password" [ngModel]="nuevaPassword()" (ngModelChange)="nuevaPassword.set($event)" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Confirmar contraseña</mat-label>
+                <input matInput type="password" [ngModel]="confirmarPassword()" (ngModelChange)="confirmarPassword.set($event)" />
+            </mat-form-field>
+
+            <button
+                mat-raised-button
+                color="primary"
+                type="button"
+                [disabled]="!nuevaPassword() || !confirmarPassword() || cambiandoPassword()"
+                (click)="cambiarPassword()"
+            >
+                Cambiar mi contraseña
+            </button>
+        </app-panel-card>
+    </div>
+    }
+</main>

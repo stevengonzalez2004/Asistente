@@ -105,7 +105,7 @@ module.exports = {
 
     /**
      * Genera la consulta dinámica para actualizar los datos de un usuario en administración.
-     * 
+     *
      * @param {string[]} campos Array con los fragmentos de asignaciones (ej. ["nombre = $1", "correo = $2"]).
      * @param {number} indexId Índice numérico que ocupará el parámetro del ID (ej. 3).
      * @returns {string} Consulta SQL generada.
@@ -114,15 +114,84 @@ module.exports = {
         UPDATE usuarios
         SET ${campos.join(', ')}
         WHERE id = $${indexId} AND deleted_at IS NULL
-        RETURNING id, nombre, correo, rol, telegram_id;
+        RETURNING id, nombre, correo, rol, telegram_id, created_at, ultimo_login, deleted_at;
     `,
 
     /**
      * Realiza un soft delete de un usuario.
      */
     DESHABILITAR_USUARIO: `
-        UPDATE usuarios 
-        SET deleted_at = CURRENT_TIMESTAMP 
+        UPDATE usuarios
+        SET deleted_at = CURRENT_TIMESTAMP
         WHERE id = $1;
+    `,
+
+    /**
+     * Reactiva (des-elimina) un usuario previamente deshabilitado.
+     */
+    REACTIVAR_USUARIO: `
+        UPDATE usuarios
+        SET deleted_at = NULL
+        WHERE id = $1
+        RETURNING id, nombre, correo, rol, telegram_id, created_at, ultimo_login, deleted_at;
+    `,
+
+    /**
+     * Registra la fecha/hora del último inicio de sesión exitoso.
+     */
+    ACTUALIZAR_ULTIMO_LOGIN: `
+        UPDATE usuarios
+        SET ultimo_login = NOW()
+        WHERE id = $1;
+    `,
+
+    /**
+     * Whitelist de columnas ordenables para el listado paginado de administración
+     * (evita inyección SQL vía el parámetro sortBy).
+     */
+    COLUMNAS_ORDENABLES_USUARIOS: {
+        id: 'u.id',
+        nombre: 'u.nombre',
+        correo: 'u.correo',
+        created_at: 'u.created_at',
+        ultimo_login: 'u.ultimo_login',
+        movimientos_count: 'movimientos_count',
+        balance_total: 'balance_total',
+    },
+
+    /**
+     * Genera el listado paginado/filtrable/ordenable de usuarios para administración,
+     * con conteo de movimientos y balance total resueltos vía subconsultas pre-agregadas
+     * (evita el fan-out de un JOIN directo entre movimientos y cuentas).
+     *
+     * @param {object} opts
+     * @param {string[]} opts.condiciones Fragmentos SQL ya armados para el WHERE.
+     * @param {string} opts.ordenColumna Columna SQL ya resuelta desde COLUMNAS_ORDENABLES_USUARIOS.
+     * @param {string} opts.ordenDireccion 'ASC' | 'DESC'.
+     * @param {number} opts.indexLimit Índice del parámetro LIMIT.
+     * @param {number} opts.indexOffset Índice del parámetro OFFSET.
+     */
+    GENERAR_LISTADO_PAGINADO_USUARIOS: ({ condiciones, ordenColumna, ordenDireccion, indexLimit, indexOffset }) => `
+        SELECT
+            u.id, u.nombre, u.correo, u.telegram_id, u.rol,
+            u.created_at, u.ultimo_login, u.deleted_at,
+            COALESCE(mv.movimientos_count, 0) AS movimientos_count,
+            COALESCE(ct.balance_total, 0) AS balance_total,
+            COUNT(*) OVER() AS total_registros
+        FROM usuarios u
+        LEFT JOIN (
+            SELECT usuario_id, COUNT(*) AS movimientos_count
+            FROM movimientos
+            WHERE deleted_at IS NULL
+            GROUP BY usuario_id
+        ) mv ON mv.usuario_id = u.id
+        LEFT JOIN (
+            SELECT usuario_id, SUM(saldo_actual) AS balance_total
+            FROM cuentas
+            GROUP BY usuario_id
+        ) ct ON ct.usuario_id = u.id
+        ${condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : ''}
+        ORDER BY ${ordenColumna} ${ordenDireccion}, u.id ASC
+        LIMIT $${indexLimit} OFFSET $${indexOffset};
     `
 };

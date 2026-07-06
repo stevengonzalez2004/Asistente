@@ -2,15 +2,26 @@ const express = require('express');
 const router = express.Router();
 const usuariosController = require('../controllers/usuariosController');
 const { verificarToken, verificarAdmin } = require('../middlewares/authMiddleware');
+const asyncHandler = require('../utils/asyncHandler');
+const { validarCampos } = require('../middlewares/validadorMiddleware');
+const {
+    validarIdUsuario,
+    validarIdUsuarioYMovimiento,
+    validarMontoMovimientoUsuario,
+    validarPasswordUsuario,
+} = require('../validators/usuariosValidators');
 
-router.get('/', verificarToken, verificarAdmin, usuariosController.listarUsuarios);
-router.get('/buscar', verificarToken, verificarAdmin, usuariosController.buscarUsuariosPorCorreo);
-router.get('/:id/cuentas', verificarToken, verificarAdmin, usuariosController.listarCuentasUsuario);
-router.get('/:id/movimientos', verificarToken, verificarAdmin, usuariosController.listarMovimientosUsuario);
-router.put('/:id/movimientos/:movimientoId', verificarToken, verificarAdmin, usuariosController.actualizarMovimientoUsuario);
-router.delete('/:id/movimientos/:movimientoId', verificarToken, verificarAdmin, usuariosController.eliminarMovimientoUsuario);
-router.get('/:id', verificarToken, verificarAdmin, usuariosController.obtenerUsuarioPorId);
-router.put('/:id', verificarToken, verificarAdmin, usuariosController.actualizarUsuario);
-router.delete('/:id', verificarToken, verificarAdmin, usuariosController.deshabilitarUsuario);
+router.get('/', verificarToken, verificarAdmin, asyncHandler(usuariosController.listarUsuarios));
+router.get('/buscar', verificarToken, verificarAdmin, asyncHandler(usuariosController.buscarUsuariosPorCorreo));
+router.get('/:id/cuentas', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.listarCuentasUsuario));
+router.get('/:id/movimientos', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.listarMovimientosUsuario));
+router.put('/:id/movimientos/:movimientoId', verificarToken, verificarAdmin, validarMontoMovimientoUsuario, validarCampos, asyncHandler(usuariosController.actualizarMovimientoUsuario));
+router.delete('/:id/movimientos/:movimientoId', verificarToken, verificarAdmin, validarIdUsuarioYMovimiento, validarCampos, asyncHandler(usuariosController.eliminarMovimientoUsuario));
+router.get('/:id/estadisticas', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.obtenerEstadisticasUsuario));
+router.get('/:id', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.obtenerUsuarioPorId));
+router.put('/:id/reactivar', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.reactivarUsuario));
+router.put('/:id/password', verificarToken, verificarAdmin, validarPasswordUsuario, validarCampos, asyncHandler(usuariosController.restablecerPassword));
+router.put('/:id', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.actualizarUsuario));
+router.delete('/:id', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.deshabilitarUsuario));
 
 module.exports = router;

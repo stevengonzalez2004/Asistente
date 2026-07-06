@@ -2,10 +2,42 @@
 const movimientosService = require('../services/movimientosService');
 const movimientosModel = require('../models/movimientosModel');
 const logger = require('../utils/logger');
+const { filasACsv } = require('../utils/csv');
+const { resolverRangoFecha } = require('../utils/dateRangePresets');
+const { mapMovimiento, mapMovimientos } = require('../dtos/movimientoDto');
+
+const LIMITE_EXPORT_CSV = 5000;
+
+/**
+ * Resuelve los filtros comunes del listado global de movimientos desde req.query,
+ * incluyendo el mapeo de presets de rango de fecha (hoy/semana/mes/anio) a
+ * fechaDesde/fechaHasta concretos via dateRangePresets. Compartido entre
+ * listarGlobalAdmin y exportarCsvAdmin.
+ */
+function resolverFiltrosMovimientosGlobal(query) {
+    const {
+        usuarioId, categoria, tipo, montoMin, montoMax, estado, q, rangoFecha
+    } = query;
+
+    const { fechaDesde, fechaHasta } = resolverRangoFecha(rangoFecha);
+
+    return {
+        usuarioId: usuarioId ? parseInt(usuarioId) : undefined,
+        categoria: categoria || undefined,
+        tipo: tipo || undefined,
+        montoMin: montoMin !== undefined ? parseFloat(montoMin) : undefined,
+        montoMax: montoMax !== undefined ? parseFloat(montoMax) : undefined,
+        estado: estado || 'activo',
+        fechaDesde: fechaDesde ? fechaDesde.toISOString() : undefined,
+        fechaHasta: fechaHasta ? fechaHasta.toISOString() : undefined,
+        q: q || undefined,
+    };
+}
 
 class MovimientosController {
     /**
      * Registra un movimiento financiero.
+     * @route POST /api/movimientos
      */
     async registrar(req, res, next) {
         try {
@@ -65,6 +97,7 @@ class MovimientosController {
 
     /**
      * Crea una cuenta nueva para el usuario autenticado.
+     * @route POST /api/movimientos/cuentas
      */
     async crearCuenta(req, res, next) {
         try {
@@ -91,6 +124,7 @@ class MovimientosController {
 
     /**
      * Obtiene la lista de cuentas y saldo total.
+     * @route GET /api/movimientos/cuentas
      */
     async obtenerCuentas(req, res, next) {
         try {
@@ -128,8 +162,8 @@ class MovimientosController {
     }
 
     /**
-     * Edita un movimiento desde el panel administrativo web (Angular)
-     * Ruta esperada: PUT /api/movimientos/:id
+     * Edita un movimiento desde el panel administrativo web (Angular).
+     * @route PUT /api/movimientos/:id
      */
     async editarWeb(req, res, next) {
         try {
@@ -145,19 +179,6 @@ class MovimientosController {
                 metodo_pago
             } = req.body;
 
-            if (!movimientoId || isNaN(movimientoId)) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'ID de movimiento inválido.' 
-                });
-            }
-            if (!monto || isNaN(monto) || parseFloat(monto) <= 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'El monto a editar debe ser un número mayor a 0.' 
-                });
-            }
-
             const movimientoActualizado = await movimientosModel.editarMovimiento(movimientoId, usuarioId, {
                 categoria,
                 monto: parseFloat(monto),
@@ -170,42 +191,31 @@ class MovimientosController {
             return res.status(200).json({
                 success: true,
                 message: 'Movimiento actualizado correctamente. Los saldos han sido recalculados.',
-                data: movimientoActualizado
+                data: mapMovimiento(movimientoActualizado)
             });
 
         } catch (error) {
             logger.error(`Error en editarWeb (Movimiento ID: ${req.params.id}):`, error);
-            
+
             if (error.message && (error.message.includes('Se requiere') || error.message.includes('Faltan'))) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: error.message 
+                return res.status(400).json({
+                    success: false,
+                    message: error.message
                 });
             }
 
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Error interno al intentar actualizar el movimiento.' 
-            });
+            next(error);
         }
     }
+
     /**
-     * Elimina lógicamente un movimiento (Soft Delete) desde el panel web.
-     * Ruta esperada: DELETE /api/movimientos/:id
+     * Elimina logicamente un movimiento (Soft Delete) desde el panel web.
+     * @route DELETE /api/movimientos/:id
      */
     async eliminarWeb(req, res, next) {
         try {
             const movimientoId = parseInt(req.params.id);
 
-            // Validación básica del ID
-            if (!movimientoId || isNaN(movimientoId)) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'ID de movimiento inválido.' 
-                });
-            }
-
-            // Llamamos al modelo que ejecuta el procedimiento almacenado en Neon
             const resultado = await movimientosModel.eliminarMovimientoWeb(movimientoId);
 
             return res.status(200).json({
@@ -215,33 +225,127 @@ class MovimientosController {
 
         } catch (error) {
             logger.error(`Error en eliminarWeb (Movimiento ID: ${req.params.id}):`, error);
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Error interno al intentar eliminar el movimiento.' 
-            });
+            next(error);
         }
     }
+
     /**
      * Obtiene el historial completo de movimientos para la tabla del panel web.
-     * Ruta esperada: GET /api/movimientos
+     * @route GET /api/movimientos
      */
     async obtenerHistorialWeb(req, res, next) {
         try {
             const usuarioId = req.usuario.id;
-            
+
             const historial = await movimientosModel.obtenerHistorial(usuarioId);
-            
+
             return res.status(200).json({
                 success: true,
-                data: historial
+                data: mapMovimientos(historial)
             });
         } catch (error) {
             logger.error('Error al obtener historial de movimientos:', error);
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Error interno al cargar el historial.' 
-            });
+            next(error);
         }
+    }
+
+    // ==========================================
+    // ADMINISTRACIÓN GLOBAL (todos los usuarios)
+    // ==========================================
+
+    /**
+     * Lista TODOS los movimientos (todos los usuarios), paginados/ordenables/filtrables.
+     * Ruta: GET /api/movimientos/admin/todos
+     */
+    async listarGlobalAdmin(req, res, next) {
+        try {
+            const { page = 1, limit = 20, sortBy = 'fecha', sortDir = 'desc' } = req.query;
+            const filtros = resolverFiltrosMovimientosGlobal(req.query);
+
+            const resultado = await movimientosModel.listarMovimientosGlobalPaginado({
+                page: parseInt(page) || 1,
+                limit: Math.min(parseInt(limit) || 20, 100),
+                sortBy, sortDir,
+                ...filtros,
+            });
+
+            res.status(200).json({
+                success: true,
+                data: mapMovimientos(resultado.data),
+                meta: { total: resultado.total, page: resultado.page, limit: resultado.limit },
+            });
+        } catch (error) { next(error); }
+    }
+
+    /**
+     * Lista alfabética de categorías para el filtro del panel global.
+     * Ruta: GET /api/movimientos/admin/categorias
+     */
+    async listarCategoriasGlobalAdmin(req, res, next) {
+        try {
+            const categorias = await movimientosModel.listarCategoriasDistintas();
+            res.status(200).json({ success: true, data: categorias });
+        } catch (error) { next(error); }
+    }
+
+    /**
+     * Duplica un movimiento existente (nueva fila, fecha = NOW(), saldos recalculados).
+     * Ruta: POST /api/movimientos/admin/:id/duplicar
+     */
+    async duplicarAdmin(req, res, next) {
+        try {
+            const movimientoId = parseInt(req.params.id);
+
+            const resultado = await movimientosService.duplicarMovimiento(movimientoId);
+
+            if (resultado.status === 'SALDO_INSUFICIENTE') {
+                return res.status(400).json({
+                    success: false,
+                    message: `No hay saldo suficiente en ${resultado.cuenta}. Faltan $${resultado.faltante.toFixed(2)}.`,
+                    data: resultado,
+                });
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: 'Movimiento duplicado correctamente.',
+                data: mapMovimiento(resultado.movimiento),
+            });
+        } catch (error) {
+            if (error.status === 404) return res.status(404).json({ success: false, message: error.message });
+            next(error);
+        }
+    }
+
+    /**
+     * Exporta a CSV los movimientos que cumplen los mismos filtros del listado global,
+     * ignorando paginación pero acotado a LIMITE_EXPORT_CSV filas.
+     * Ruta: GET /api/movimientos/admin/exportar
+     */
+    async exportarCsvAdmin(req, res, next) {
+        try {
+            const { sortBy = 'fecha', sortDir = 'desc' } = req.query;
+            const filtros = resolverFiltrosMovimientosGlobal(req.query);
+
+            const resultado = await movimientosModel.listarMovimientosGlobalPaginado({
+                page: 1, limit: LIMITE_EXPORT_CSV, sortBy, sortDir, ...filtros,
+            });
+
+            const encabezados = ['ID', 'Fecha', 'Usuario', 'Correo', 'Categoria', 'Tipo', 'Monto', 'Descripcion', 'Cuenta origen', 'Cuenta destino', 'Estado'];
+            const filas = resultado.data.map((m) => [
+                m.id, m.fecha, m.usuario_nombre, m.usuario_correo, m.categoria, m.tipo, m.monto,
+                m.descripcion, m.cuenta_origen, m.cuenta_destino, m.deleted_at ? 'Eliminado' : 'Activo',
+            ]);
+
+            const csv = filasACsv(encabezados, filas);
+
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', 'attachment; filename="movimientos.csv"');
+            if (resultado.total > LIMITE_EXPORT_CSV) {
+                res.setHeader('X-Export-Truncated', 'true');
+            }
+            res.status(200).send(csv);
+        } catch (error) { next(error); }
     }
 }
 

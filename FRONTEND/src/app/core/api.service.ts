@@ -1,14 +1,28 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import {
   ApiResponse,
   BalanceUsuario,
+  Configuracion,
   CrearMovimientoPayload,
   Cuenta,
+  DashboardAdminData,
+  EstadisticasUsuario,
+  ListarMovimientosGlobalesParams,
+  ListarUsuariosParams,
   Movimiento,
+  MovimientoGlobal,
   MovimientoPayload,
+  PaginatedMeta,
+  PaginatedResponse,
+  ReporteData,
+  ReporteFiltros,
+  ReporteFormatoExport,
+  ReporteTipo,
+  RespaldoPayload,
   Usuario,
+  UsuarioListado,
 } from './models';
 
 const API_URL = 'http://localhost:3000/api';
@@ -17,9 +31,43 @@ const API_URL = 'http://localhost:3000/api';
 export class ApiService {
   constructor(private readonly http: HttpClient) {}
 
-  listarUsuarios(): Observable<Usuario[]> {
+  private buildHttpParams(params: Record<string, unknown>): HttpParams {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([clave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== '') {
+        httpParams = httpParams.set(clave, String(valor));
+      }
+    });
+    return httpParams;
+  }
+
+  listarUsuarios(params: ListarUsuariosParams = {}): Observable<PaginatedResponse<UsuarioListado>> {
+    const httpParams = this.buildHttpParams(params as Record<string, unknown>);
+
     return this.http
-      .get<ApiResponse<Usuario[]>>(`${API_URL}/usuarios`)
+      .get<ApiResponse<UsuarioListado[]> & { meta: PaginatedMeta }>(`${API_URL}/usuarios`, { params: httpParams })
+      .pipe(map((response) => ({ data: response.data, meta: response.meta })));
+  }
+
+  obtenerUsuarioPorId(id: number): Observable<Usuario> {
+    return this.http
+      .get<ApiResponse<Usuario>>(`${API_URL}/usuarios/${id}`)
+      .pipe(map((response) => response.data));
+  }
+
+  reactivarUsuario(id: number): Observable<Usuario> {
+    return this.http
+      .put<ApiResponse<Usuario>>(`${API_URL}/usuarios/${id}/reactivar`, {})
+      .pipe(map((response) => response.data));
+  }
+
+  restablecerPassword(id: number, password: string): Observable<ApiResponse<unknown>> {
+    return this.http.put<ApiResponse<unknown>>(`${API_URL}/usuarios/${id}/password`, { password });
+  }
+
+  obtenerEstadisticasUsuario(id: number): Observable<EstadisticasUsuario> {
+    return this.http
+      .get<ApiResponse<EstadisticasUsuario>>(`${API_URL}/usuarios/${id}/estadisticas`)
       .pipe(map((response) => response.data));
   }
 
@@ -94,5 +142,73 @@ export class ApiService {
     return this.http
       .post<ApiResponse<unknown>>(`${API_URL}/movimientos`, payload)
       .pipe(map((response) => response.data));
+  }
+
+  obtenerDashboardAdmin(): Observable<DashboardAdminData> {
+    return this.http
+      .get<ApiResponse<DashboardAdminData>>(`${API_URL}/reportes/web/dashboard-admin`)
+      .pipe(map((response) => response.data));
+  }
+
+  listarMovimientosGlobal(params: ListarMovimientosGlobalesParams = {}): Observable<PaginatedResponse<MovimientoGlobal>> {
+    const httpParams = this.buildHttpParams(params as Record<string, unknown>);
+    return this.http
+      .get<ApiResponse<MovimientoGlobal[]> & { meta: PaginatedMeta }>(`${API_URL}/movimientos/admin/todos`, { params: httpParams })
+      .pipe(map((response) => ({ data: response.data, meta: response.meta })));
+  }
+
+  listarCategoriasGlobal(): Observable<string[]> {
+    return this.http
+      .get<ApiResponse<string[]>>(`${API_URL}/movimientos/admin/categorias`)
+      .pipe(map((response) => response.data));
+  }
+
+  duplicarMovimientoGlobal(id: number): Observable<unknown> {
+    return this.http
+      .post<ApiResponse<unknown>>(`${API_URL}/movimientos/admin/${id}/duplicar`, {})
+      .pipe(map((response) => response.data));
+  }
+
+  exportarMovimientosGlobal(params: ListarMovimientosGlobalesParams = {}): Observable<Blob> {
+    const httpParams = this.buildHttpParams(params as Record<string, unknown>);
+    return this.http.get(`${API_URL}/movimientos/admin/exportar`, { params: httpParams, responseType: 'blob' });
+  }
+
+  generarReporte(tipo: ReporteTipo, filtros: ReporteFiltros = {}): Observable<ReporteData> {
+    const httpParams = this.buildHttpParams({ tipo, ...filtros } as Record<string, unknown>);
+    return this.http
+      .get<ApiResponse<ReporteData>>(`${API_URL}/reportes/admin/generar`, { params: httpParams })
+      .pipe(map((response) => response.data));
+  }
+
+  exportarReporte(tipo: ReporteTipo, formato: ReporteFormatoExport, filtros: ReporteFiltros = {}): Observable<Blob> {
+    const httpParams = this.buildHttpParams({ tipo, formato, ...filtros } as Record<string, unknown>);
+    return this.http.get(`${API_URL}/reportes/admin/exportar`, { params: httpParams, responseType: 'blob' });
+  }
+
+  obtenerConfiguracion(): Observable<Configuracion> {
+    return this.http
+      .get<ApiResponse<Configuracion>>(`${API_URL}/configuracion`)
+      .pipe(map((response) => response.data));
+  }
+
+  obtenerConfiguracionAdmin(): Observable<Configuracion> {
+    return this.http
+      .get<ApiResponse<Configuracion>>(`${API_URL}/configuracion/admin`)
+      .pipe(map((response) => response.data));
+  }
+
+  actualizarConfiguracion(cambios: Partial<Configuracion>): Observable<Configuracion> {
+    return this.http
+      .put<ApiResponse<Configuracion>>(`${API_URL}/configuracion`, cambios)
+      .pipe(map((response) => response.data));
+  }
+
+  exportarRespaldo(): Observable<Blob> {
+    return this.http.get(`${API_URL}/configuracion/respaldo`, { responseType: 'blob' });
+  }
+
+  restaurarRespaldo(datos: RespaldoPayload, confirmacion: string): Observable<ApiResponse<null>> {
+    return this.http.post<ApiResponse<null>>(`${API_URL}/configuracion/respaldo/restaurar`, { datos, confirmacion });
   }
 }

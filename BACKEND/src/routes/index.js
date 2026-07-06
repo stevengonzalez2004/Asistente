@@ -8,14 +8,18 @@ const router = express.Router();
 
 // Importación de sub-rutas
 const authRoutes = require('./authRoutes');
+const configuracionRoutes = require('./configuracionRoutes');
 const iaRoutes = require('./iaRoutes');
 const movimientosRoutes = require('./movimientosRoutes');
+const movimientosAdminRoutes = require('./movimientosAdminRoutes');
 const reportesRoutes = require('./reportesRoutes');
 const usuariosRoutes = require('./usuariosRoutes');
 
 // Asignación de sub-rutas con sus respectivos prefijos
 router.use('/auth', authRoutes);
+router.use('/configuracion', configuracionRoutes);
 router.use('/ia', iaRoutes);
+router.use('/movimientos/admin', movimientosAdminRoutes); // prefijo más específico antes de '/movimientos'
 router.use('/movimientos', movimientosRoutes);
 router.use('/reportes', reportesRoutes);
 router.use('/usuarios', usuariosRoutes);

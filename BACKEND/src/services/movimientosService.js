@@ -95,6 +95,33 @@ class MovimientosService {
     }
 
     /**
+     * Duplica un movimiento existente: crea uno NUEVO (mismo usuario/tipo/categoria/monto/
+     * cuentas/descripcion/metodo_pago, fecha = NOW()) reutilizando el mismo camino de
+     * registrarMovimiento (con su misma validación de saldo), para que los saldos de las
+     * cuentas se actualicen correctamente en vez de copiar la fila cruda.
+     * @param {number} movimientoId ID del movimiento origen.
+     */
+    async duplicarMovimiento(movimientoId) {
+        const original = await movimientosModel.obtenerMovimientoCompletoPorId(movimientoId);
+        if (!original) {
+            const error = new Error('Movimiento no encontrado o eliminado; no se puede duplicar.');
+            error.status = 404;
+            throw error;
+        }
+
+        return await this.registrarMovimiento({
+            usuario_id: original.usuario_id,
+            tipo: original.tipo,
+            categoria: original.categoria,
+            monto: Number(original.monto),
+            cuenta_origen: original.cuenta_origen,
+            cuenta_destino: original.cuenta_destino,
+            descripcion: original.descripcion,
+            metodo_pago: original.metodo_pago,
+        });
+    }
+
+    /**
      * Crea una cuenta nueva para un usuario.
      */
     async crearCuenta(data) {

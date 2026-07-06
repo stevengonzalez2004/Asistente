@@ -205,5 +205,78 @@ module.exports = {
      */
     OBTENER_HISTORIAL: `
         SELECT * FROM fx_listar_historial_movimientos($1);
+    `,
+
+    // ==========================================
+    // ADMINISTRACIÓN GLOBAL (todos los usuarios)
+    // ==========================================
+
+    /**
+     * Whitelist de columnas ordenables para el listado global de movimientos (administración).
+     */
+    COLUMNAS_ORDENABLES_MOVIMIENTOS_GLOBAL: {
+        fecha: 'm.fecha',
+        monto: 'm.monto',
+        usuario: 'u.nombre',
+        categoria: 'cat.nombre',
+        tipo: 'tm.nombre',
+    },
+
+    /**
+     * Genera el listado paginado/filtrable/ordenable de TODOS los movimientos (todos los usuarios).
+     *
+     * @param {object} opts
+     * @param {string[]} opts.condiciones Fragmentos SQL ya armados para el WHERE.
+     * @param {string} opts.ordenColumna Columna SQL resuelta desde COLUMNAS_ORDENABLES_MOVIMIENTOS_GLOBAL.
+     * @param {string} opts.ordenDireccion 'ASC' | 'DESC'.
+     * @param {number} opts.indexLimit Índice del parámetro LIMIT.
+     * @param {number} opts.indexOffset Índice del parámetro OFFSET.
+     */
+    GENERAR_LISTADO_PAGINADO_MOVIMIENTOS_GLOBAL: ({ condiciones, ordenColumna, ordenDireccion, indexLimit, indexOffset }) => `
+        SELECT
+            m.id, m.fecha, m.monto, m.descripcion, m.metodo_pago, m.deleted_at,
+            tm.nombre AS tipo,
+            cat.nombre AS categoria,
+            co.nombre AS cuenta_origen,
+            cd.nombre AS cuenta_destino,
+            u.id AS usuario_id, u.nombre AS usuario_nombre, u.correo AS usuario_correo,
+            COUNT(*) OVER() AS total_registros
+        FROM movimientos m
+        JOIN usuarios u ON m.usuario_id = u.id
+        JOIN tipos_movimiento tm ON m.tipo_movimiento_id = tm.id
+        LEFT JOIN categorias cat ON m.categoria_id = cat.id
+        LEFT JOIN cuentas co ON m.cuenta_origen_id = co.id
+        LEFT JOIN cuentas cd ON m.cuenta_destino_id = cd.id
+        ${condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : ''}
+        ORDER BY ${ordenColumna} ${ordenDireccion}, m.id DESC
+        LIMIT $${indexLimit} OFFSET $${indexOffset};
+    `,
+
+    /**
+     * Lista alfabética de todas las categorías existentes (globales y de usuario) para el filtro.
+     */
+    OBTENER_CATEGORIAS_DISTINCT: `
+        SELECT DISTINCT nombre
+        FROM categorias
+        ORDER BY nombre;
+    `,
+
+    /**
+     * Obtiene un movimiento completo (con nombres legibles) para "Duplicar" desde administración.
+     * Exige deleted_at IS NULL: no se permite duplicar un movimiento ya eliminado.
+     */
+    OBTENER_MOVIMIENTO_COMPLETO_POR_ID: `
+        SELECT
+            m.id, m.usuario_id, m.monto, m.descripcion, m.metodo_pago,
+            tm.nombre AS tipo,
+            cat.nombre AS categoria,
+            co.nombre AS cuenta_origen,
+            cd.nombre AS cuenta_destino
+        FROM movimientos m
+        JOIN tipos_movimiento tm ON m.tipo_movimiento_id = tm.id
+        LEFT JOIN categorias cat ON m.categoria_id = cat.id
+        LEFT JOIN cuentas co ON m.cuenta_origen_id = co.id
+        LEFT JOIN cuentas cd ON m.cuenta_destino_id = cd.id
+        WHERE m.id = $1 AND m.deleted_at IS NULL;
     `
 };

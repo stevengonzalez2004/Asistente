@@ -2,7 +2,7 @@
     min-height: auto;
     padding: 0;
     background: transparent;
-    color: #f8fafc;
+    color: var(--app-text-primary, #f8fafc);
 }
 
 p,
@@ -37,7 +37,7 @@ h2 {
 small,
 .metrics span,
 .account-card span {
-    color: #9fb1c8;
+    color: var(--app-text-muted, #9fb1c8);
 }
 
 h1 {
@@ -54,9 +54,9 @@ h2 {
     gap: 8px;
     margin-bottom: 16px;
     padding: 8px;
-    border: 1px solid rgba(148, 163, 184, 0.24);
+    border: 1px solid var(--app-border-color, rgba(148, 163, 184, 0.24));
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--app-overlay-soft, rgba(255, 255, 255, 0.05));
 }
 
 .navbar button {
@@ -64,7 +64,7 @@ h2 {
     border: 1px solid transparent;
     border-radius: 10px;
     background: transparent;
-    color: #cbd5e1;
+    color: var(--app-text-muted, #cbd5e1);
     transition: all 0.2s ease;
 }
 

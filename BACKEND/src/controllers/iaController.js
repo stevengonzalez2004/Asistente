@@ -1,10 +1,12 @@
 // src/controllers/ia.Controller.js
 
 const iaService = require('../services/iaService');
+const logger = require('../utils/logger');
 
 class IaController {
   /**
    * Procesa un mensaje de texto para extraer intenciones y entidades.
+   * @route POST /api/ia/procesar
    */
   async procesarMensaje(req, res, next) {
     try {
@@ -22,6 +24,7 @@ class IaController {
         data: analisis
       });
     } catch (error) {
+      logger.error('Error al procesar mensaje de IA:', error);
       next(error);
     }
   }

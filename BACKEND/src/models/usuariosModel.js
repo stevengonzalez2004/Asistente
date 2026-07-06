@@ -1,6 +1,7 @@
 // src/models/usuariosModel.js
 const db = require('../config/db');
 const usuariosQueries = require('../queries/usuariosQueries');
+const { crearConstructorCondiciones, construirResultadoPaginado } = require('../utils/queryBuilder');
 
 class UsuariosModel {
     // ==========================================
@@ -130,6 +131,11 @@ class UsuariosModel {
             campos.push(`correo = $${valores.length}`);
         }
 
+        if (datos.rol !== undefined) {
+            valores.push(datos.rol);
+            campos.push(`rol = $${valores.length}`);
+        }
+
         if (datos.password !== undefined) {
             valores.push(datos.password);
             campos.push(`password = $${valores.length}`);
@@ -151,6 +157,50 @@ class UsuariosModel {
      */
     async DeshabilitarUsuario(id) {
         return await db.query(usuariosQueries.DESHABILITAR_USUARIO, [id]);
+    }
+
+    /**
+     * Registra la fecha/hora del último inicio de sesión exitoso.
+     * @param {number} id ID del usuario que inició sesión.
+     */
+    async ActualizarUltimoLogin(id) {
+        return await db.query(usuariosQueries.ACTUALIZAR_ULTIMO_LOGIN, [id]);
+    }
+
+    /**
+     * Reactiva (des-elimina) un usuario previamente deshabilitado.
+     * @param {number} id ID del usuario a reactivar.
+     */
+    async ReactivarUsuario(id) {
+        return await db.query(usuariosQueries.REACTIVAR_USUARIO, [id]);
+    }
+
+    /**
+     * Lista usuarios de forma paginada, ordenable y filtrable para administración,
+     * incluyendo conteo de movimientos y balance total por usuario.
+     * @param {object} opts { page, limit, sortBy, sortDir, rol, estado, q }
+     */
+    async ListarUsuariosPaginado({ page = 1, limit = 20, sortBy = 'id', sortDir = 'asc', rol, estado, q } = {}) {
+        const { condiciones, valores, agregar, paginar } = crearConstructorCondiciones();
+
+        if (rol) agregar('u.rol = ?', rol);
+
+        if (estado === 'activo') condiciones.push('u.deleted_at IS NULL');
+        if (estado === 'inactivo') condiciones.push('u.deleted_at IS NOT NULL');
+
+        if (q) agregar('(u.nombre ILIKE ? OR u.correo ILIKE ?)', `%${q}%`);
+
+        const ordenColumna = usuariosQueries.COLUMNAS_ORDENABLES_USUARIOS[sortBy] || 'u.id';
+        const ordenDireccion = String(sortDir).toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+
+        const { indexLimit, indexOffset } = paginar(page, limit);
+
+        const query = usuariosQueries.GENERAR_LISTADO_PAGINADO_USUARIOS({
+            condiciones, ordenColumna, ordenDireccion, indexLimit, indexOffset,
+        });
+
+        const resultado = await db.query(query, valores);
+        return construirResultadoPaginado(resultado, page, limit);
     }
 }
 

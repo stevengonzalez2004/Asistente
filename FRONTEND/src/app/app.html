@@ -1,40 +1,147 @@
 <div class="app-container" [class.with-layout]="isLoggedIn">
     @if (isLoggedIn && !isLoginPage()) {
-    <aside class="global-sidebar">
+    <aside class="global-sidebar" [class.collapsed]="sidebarCollapsed()">
         <div class="sidebar-brand">
+            @if (logoUrl()) {
+            <img class="brand-icon brand-logo" [src]="logoUrl()" alt="Logo" />
+            } @else {
             <div class="brand-icon">AF</div>
+            }
             <div class="brand-text">
-                <h3>Asistente</h3>
-                <p>Financiero</p>
+                <h3>{{ nombreSistema() }}</h3>
+                @if (nombreSistemaSub()) {
+                <p>{{ nombreSistemaSub() }}</p>
+                }
+            </div>
+            <button
+                type="button"
+                mat-icon-button
+                class="collapse-toggle"
+                (click)="toggleSidebar()"
+                [matTooltip]="sidebarCollapsed() ? 'Expandir menú' : 'Colapsar menú'"
+                matTooltipPosition="right"
+            >
+                <mat-icon>{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+            </button>
+        </div>
+
+        <div
+            class="sidebar-user-card"
+            [matTooltip]="userName + ' — ' + roleLabel + ' — ' + estadoLabel"
+            [matTooltipDisabled]="!sidebarCollapsed()"
+            matTooltipPosition="right"
+        >
+            <div class="user-avatar">{{ avatarInitials }}</div>
+            <div class="user-info-text">
+                <span class="user-info-name">{{ userName }}</span>
+                <span class="user-info-role">{{ roleLabel }}</span>
+                <span class="estado-badge" [class.active]="estadoActivo" [class.inactive]="!estadoActivo">
+                    <span class="estado-dot"></span>{{ estadoLabel }}
+                </span>
             </div>
         </div>
 
-        <nav class="sidebar-menu" [attr.aria-label]="isAdmin ? 'Menú Administrador' : 'Menú Usuario'">
-            @if (isAdmin) {
-            <a routerLink="/admin" routerLinkActive="active" class="menu-item">
-                <span class="icon">◉</span>
-                <span class="label">Administración</span>
-            </a>
-            } @if (isUser) {
-            <a routerLink="/usuario" routerLinkActive="active" class="menu-item">
-                <span class="icon">◎</span>
-                <span class="label">Mi Dashboard</span>
-            </a>
-            }
-        </nav>
+        @if (isAdmin) {
+        <div class="sidebar-group">
+            <p class="sidebar-group-label">Administración</p>
+            <nav class="sidebar-menu" aria-label="Menú Administrador">
+                @for (item of adminNavItems; track item.label) {
+                @if (item.disabled) {
+                <div
+                    class="menu-item disabled"
+                    [matTooltip]="item.label + ' (Próximamente)'"
+                    [matTooltipDisabled]="!sidebarCollapsed()"
+                    matTooltipPosition="right"
+                >
+                    <mat-icon class="icon">{{ item.icon }}</mat-icon>
+                    <span class="label">{{ item.label }}</span>
+                    <span class="soon-badge">Próximamente</span>
+                </div>
+                } @else {
+                <a
+                    [routerLink]="item.route"
+                    [queryParams]="item.queryParams"
+                    routerLinkActive="active"
+                    class="menu-item"
+                    [matTooltip]="item.label"
+                    [matTooltipDisabled]="!sidebarCollapsed()"
+                    matTooltipPosition="right"
+                >
+                    <mat-icon class="icon">{{ item.icon }}</mat-icon>
+                    <span class="label">{{ item.label }}</span>
+                </a>
+                }
+                }
+            </nav>
+        </div>
+        }
+
+        @if (isUser) {
+        <div class="sidebar-group">
+            <p class="sidebar-group-label">Mi Cuenta</p>
+            <nav class="sidebar-menu" aria-label="Menú Usuario">
+                @for (item of userNavItems; track item.label) {
+                @if (item.disabled) {
+                <div
+                    class="menu-item disabled"
+                    [matTooltip]="item.label + ' (Próximamente)'"
+                    [matTooltipDisabled]="!sidebarCollapsed()"
+                    matTooltipPosition="right"
+                >
+                    <mat-icon class="icon">{{ item.icon }}</mat-icon>
+                    <span class="label">{{ item.label }}</span>
+                    <span class="soon-badge">Próximamente</span>
+                </div>
+                } @else {
+                <a
+                    [routerLink]="item.route"
+                    [queryParams]="item.queryParams"
+                    routerLinkActive="active"
+                    class="menu-item"
+                    [matTooltip]="item.label"
+                    [matTooltipDisabled]="!sidebarCollapsed()"
+                    matTooltipPosition="right"
+                >
+                    <mat-icon class="icon">{{ item.icon }}</mat-icon>
+                    <span class="label">{{ item.label }}</span>
+                </a>
+                }
+                }
+            </nav>
+        </div>
+        }
 
         <div class="sidebar-footer">
-            <button type="button" class="logout-btn" (click)="logout()">Cerrar sesión</button>
+            <button
+                type="button"
+                class="logout-btn"
+                (click)="logout()"
+                matTooltip="Cerrar sesión"
+                [matTooltipDisabled]="!sidebarCollapsed()"
+                matTooltipPosition="right"
+            >
+                <mat-icon class="icon">logout</mat-icon>
+                <span class="label">Cerrar sesión</span>
+            </button>
         </div>
     </aside>
 
-    <div class="main-wrapper">
+    <div class="main-wrapper" [class.collapsed]="sidebarCollapsed()">
         <header class="global-navbar">
-            <div class="navbar-brand">Control Financiero</div>
+            <div class="navbar-brand">{{ navbarBrand() }}</div>
             <div class="navbar-spacer"></div>
+            <button
+                type="button"
+                mat-icon-button
+                class="theme-toggle"
+                (click)="toggleTema()"
+                [matTooltip]="tema() === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro'"
+            >
+                <mat-icon>{{ tema() === 'claro' ? 'dark_mode' : 'light_mode' }}</mat-icon>
+            </button>
             <div class="navbar-user">
                 <span class="user-name">{{ userName }}</span>
-                <span class="user-role">{{ isAdmin ? 'Administrador' : 'Usuario' }}</span>
+                <span class="user-role">{{ roleLabel }}</span>
             </div>
         </header>
 

@@ -1,0 +1,117 @@
+
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+// Tema Material personalizado para la paleta fintech del proyecto (navy + cian
+// #38bdf8 + teal #0f766e). Los componentes de Material leen estas variables
+// --mat-sys-* internamente. Solo existen 2 variantes: claro/oscuro (sin selector
+// de color principal); ThemeService fija data-theme en <html>, 100% local
+// (localStorage), sin persistencia en el backend.
+//
+// Default antes de que arranque Angular/ThemeService: claro (comportamiento
+// por defecto al visitar la app por primera vez).
+html {
+  @include mat.theme((
+    color: (
+      theme-type: light,
+      primary: mat.$cyan-palette,
+      tertiary: mat.$green-palette,
+    ),
+    typography: Inter,
+    density: 0,
+  ));
+
+  --app-bg-page-start: #eef2f7;
+  --app-bg-page-mid: #e4ebf3;
+  --app-bg-page-end: #dbe4ee;
+  --app-bg-sidebar-start: #ffffff;
+  --app-bg-sidebar-end: #f1f5f9;
+  --app-bg-navbar-start: rgba(255, 255, 255, 0.92);
+  --app-bg-navbar-end: rgba(248, 250, 252, 0.92);
+  --app-bg-card-start: #ffffff;
+  --app-bg-card-end: #f4f7fb;
+  --app-bg-card-alt-start: #eef2f7;
+  --app-bg-card-alt-end: #e4e9f0;
+  --app-text-primary: #0f172a;
+  --app-text-muted: #55677e;
+  --app-text-dim: #94a3b8;
+  --app-border-color: rgba(15, 23, 42, 0.12);
+  --app-border-color-soft: rgba(15, 23, 42, 0.08);
+  --app-shadow-color: rgba(15, 23, 42, 0.12);
+  --app-overlay-soft: rgba(15, 23, 42, 0.035);
+  --app-overlay-strong: rgba(15, 23, 42, 0.06);
+  --app-bg-table-header: rgba(15, 23, 42, 0.05);
+  --app-accent-on-surface: #0284c7;
+}
+
+// ==========================================
+// Tema claro/oscuro (toggle rapido en el navbar, no en Configuracion).
+// ==========================================
+$config-temas: (
+  "oscuro": dark,
+  "claro": light,
+);
+
+@each $tema-attr, $tema-tipo in $config-temas {
+  html[data-theme='#{$tema-attr}'] {
+    @include mat.theme((
+      color: (
+        theme-type: $tema-tipo,
+        primary: mat.$cyan-palette,
+        tertiary: mat.$green-palette,
+      ),
+      typography: Inter,
+      density: 0,
+    ));
+
+    @if $tema-attr == 'oscuro' {
+      --app-bg-page-start: #07111f;
+      --app-bg-page-mid: #0f2032;
+      --app-bg-page-end: #12263d;
+      --app-bg-sidebar-start: #0a1628;
+      --app-bg-sidebar-end: #050d18;
+      --app-bg-navbar-start: rgba(16, 32, 50, 0.95);
+      --app-bg-navbar-end: rgba(12, 26, 40, 0.95);
+      --app-bg-card-start: #13253b;
+      --app-bg-card-end: #102132;
+      --app-bg-card-alt-start: #16283d;
+      --app-bg-card-alt-end: #111d2d;
+      --app-text-primary: #f8fafc;
+      --app-text-muted: #9fb1c8;
+      --app-text-dim: #5b6b82;
+      --app-border-color: rgba(148, 163, 184, 0.24);
+      --app-border-color-soft: rgba(148, 163, 184, 0.12);
+      --app-shadow-color: rgba(2, 8, 23, 0.35);
+      --app-overlay-soft: rgba(255, 255, 255, 0.04);
+      --app-overlay-strong: rgba(255, 255, 255, 0.08);
+      --app-bg-table-header: rgba(15, 23, 42, 0.6);
+      --app-accent-on-surface: #38bdf8;
+    } @else {
+      --app-bg-page-start: #eef2f7;
+      --app-bg-page-mid: #e4ebf3;
+      --app-bg-page-end: #dbe4ee;
+      --app-bg-sidebar-start: #ffffff;
+      --app-bg-sidebar-end: #f1f5f9;
+      --app-bg-navbar-start: rgba(255, 255, 255, 0.92);
+      --app-bg-navbar-end: rgba(248, 250, 252, 0.92);
+      --app-bg-card-start: #ffffff;
+      --app-bg-card-end: #f4f7fb;
+      --app-bg-card-alt-start: #eef2f7;
+      --app-bg-card-alt-end: #e4e9f0;
+      --app-text-primary: #0f172a;
+      --app-text-muted: #55677e;
+      --app-text-dim: #94a3b8;
+      --app-border-color: rgba(15, 23, 42, 0.12);
+      --app-border-color-soft: rgba(15, 23, 42, 0.08);
+      --app-shadow-color: rgba(15, 23, 42, 0.12);
+      --app-overlay-soft: rgba(15, 23, 42, 0.035);
+      --app-overlay-strong: rgba(15, 23, 42, 0.06);
+      --app-bg-table-header: rgba(15, 23, 42, 0.05);
+      --app-accent-on-surface: #0284c7;
+    }
+  }
+}
