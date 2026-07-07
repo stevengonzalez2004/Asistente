@@ -21,6 +21,4 @@ export const USER_NAV_ITEMS: SidebarNavItem[] = [
   { label: 'Dashboard', icon: 'dashboard', route: '/usuario', disabled: false },
   { label: 'Movimientos', icon: 'swap_horiz', route: '/usuario', disabled: false },
   { label: 'IA', icon: 'smart_toy', route: '/ia', disabled: false },
-  { label: 'Perfil', icon: 'person', route: null, disabled: true },
-  { label: 'Configuración', icon: 'settings', route: null, disabled: true },
 ];

@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Cuenta, Movimiento } from '../../core/models';
+import { SnackbarService } from '../../core/snackbar.service';
 import { Notice } from '../../shared/notice/notice';
 
 type UserSection = 'cuentas' | 'movimientos' | 'crear-cuenta' | 'nuevo-movimiento';
@@ -20,6 +21,7 @@ export class UserDashboard implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly snackbar = inject(SnackbarService);
 
   readonly usuario = this.auth.usuario;
   readonly cuentas = signal<Cuenta[]>([]);
@@ -29,7 +31,6 @@ export class UserDashboard implements OnInit {
   readonly cargando = signal(false);
   readonly guardandoCuenta = signal(false);
   readonly guardandoMovimiento = signal(false);
-  readonly mensaje = signal('');
   readonly error = signal('');
 
   readonly totalCuentas = computed(() => this.cuentas().length);
@@ -100,14 +101,14 @@ export class UserDashboard implements OnInit {
     this.api.crearCuenta(nombre.trim()).subscribe({
       next: () => {
         this.guardandoCuenta.set(false);
-        this.mensaje.set('Cuenta creada correctamente.');
+        this.snackbar.exito('Cuenta creada correctamente.');
         this.cuentaForm.reset({ nombre: '' });
         this.cargarCuentas();
         this.seccionActiva.set('cuentas');
       },
       error: (err) => {
         this.guardandoCuenta.set(false);
-        this.error.set(err?.error?.message || 'No se pudo crear la cuenta.');
+        this.snackbar.error(err?.error?.message || 'No se pudo crear la cuenta.');
       },
     });
   }
@@ -148,7 +149,7 @@ export class UserDashboard implements OnInit {
       .subscribe({
         next: () => {
           this.guardandoMovimiento.set(false);
-          this.mensaje.set('Movimiento registrado correctamente.');
+          this.snackbar.exito('Movimiento registrado correctamente.');
           this.movimientoForm.reset({
             tipo: 'GASTO',
             categoria: 'Otros',
@@ -164,7 +165,7 @@ export class UserDashboard implements OnInit {
         },
         error: (err) => {
           this.guardandoMovimiento.set(false);
-          this.error.set(err?.error?.message || 'No se pudo registrar el movimiento.');
+          this.snackbar.error(err?.error?.message || 'No se pudo registrar el movimiento.');
         },
       });
   }
@@ -174,7 +175,6 @@ export class UserDashboard implements OnInit {
   }
 
   limpiarAvisos(): void {
-    this.mensaje.set('');
     this.error.set('');
   }
 

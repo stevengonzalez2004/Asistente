@@ -7,7 +7,6 @@
         <button mat-stroked-button type="button" (click)="cerrarSesion()">Salir</button>
     </header>
 
-    <app-notice tipo="success" [mensaje]="mensaje()" />
     <app-notice tipo="danger" [mensaje]="error()" />
     <app-notice tipo="danger" [mensaje]="errorDashboard()" />
 
@@ -130,8 +129,8 @@
     <!-- ============================================================ -->
     <!-- Graficos                                                       -->
     <!-- ============================================================ -->
-    <section class="charts-grid">
-        @defer (on viewport) {
+    <section class="charts-grid" #dashboardChartsSection>
+        @defer (on viewport(dashboardChartsSection)) {
         <app-chart-card titulo="Ingresos vs Gastos" icon="bar_chart" [options]="ingresosVsGastosOptions()" [loading]="cargandoDashboard()" />
         <app-chart-card titulo="Balance mensual" icon="show_chart" [options]="balanceMensualOptions()" [loading]="cargandoDashboard()" />
         <app-chart-card titulo="Movimientos por dia" icon="calendar_view_week" [options]="movimientosPorDiaOptions()" [loading]="cargandoDashboard()" />
@@ -600,9 +599,7 @@
             </button>
         </div>
 
-        @if (errorReporte()) {
-        <p class="notice danger">{{ errorReporte() }}</p>
-        }
+        <app-notice tipo="danger" [mensaje]="errorReporte()" />
 
         <form class="filters-toolbar" [formGroup]="filtrosReporteForm">
             <mat-form-field appearance="outline" class="filter-select">
@@ -686,8 +683,8 @@
         </div>
 
         @if (chartOptionsReporte(); as opciones) {
-        <section class="charts-grid">
-            @defer (on viewport) {
+        <section class="charts-grid" #reporteChartSection>
+            @defer (on viewport(reporteChartSection)) {
             <app-chart-card titulo="Gráfico" icon="bar_chart" [options]="opciones" />
             } @placeholder {
             <app-skeleton variant="chart" height="280px" />

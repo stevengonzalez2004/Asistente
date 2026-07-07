@@ -15,29 +15,29 @@
     display: grid;
     gap: 4px;
     padding: 12px;
-    border-radius: 10px;
+    border-radius: var(--radius-md, 10px);
     background: rgba(56, 189, 248, 0.08);
     border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .stats-kpi span {
-    font-size: 11px;
+    font-size: var(--text-xs, 11px);
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    color: #9fb1c8;
+    color: var(--app-text-muted, #9fb1c8);
 }
 
 .stats-kpi strong {
-    font-size: 18px;
-    color: #f8fafc;
+    font-size: var(--text-md, 18px);
+    color: var(--app-text-primary, #f8fafc);
 }
 
 .stats-empty {
     padding: 20px;
     text-align: center;
-    color: #9fb1c8;
+    color: var(--app-text-muted, #9fb1c8);
 }
 
 .stats-error {
-    color: #f87171;
+    color: var(--app-danger-text, #f87171);
 }

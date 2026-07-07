@@ -1,6 +1,14 @@
 <div class="app-container" [class.with-layout]="isLoggedIn">
+    @if (navegando()) {
+    <mat-progress-bar mode="indeterminate" class="route-progress-bar" />
+    }
+
     @if (isLoggedIn && !isLoginPage()) {
-    <aside class="global-sidebar" [class.collapsed]="sidebarCollapsed()">
+    @if (mobileSidebarOpen()) {
+    <div class="mobile-sidebar-backdrop" (click)="closeMobileSidebar()"></div>
+    }
+
+    <aside class="global-sidebar" [class.collapsed]="sidebarCollapsed()" [class.mobile-open]="mobileSidebarOpen()">
         <div class="sidebar-brand">
             @if (logoUrl()) {
             <img class="brand-icon brand-logo" [src]="logoUrl()" alt="Logo" />
@@ -128,6 +136,15 @@
 
     <div class="main-wrapper" [class.collapsed]="sidebarCollapsed()">
         <header class="global-navbar">
+            <button
+                type="button"
+                mat-icon-button
+                class="mobile-menu-toggle"
+                (click)="toggleMobileSidebar()"
+                matTooltip="Menú"
+            >
+                <mat-icon>menu</mat-icon>
+            </button>
             <div class="navbar-brand">{{ navbarBrand() }}</div>
             <div class="navbar-spacer"></div>
             <button
@@ -145,10 +162,10 @@
             </div>
         </header>
 
-        <main class="main-content">
-            <router-outlet />
+        <main class="main-content" [@routeAnimation]="prepareRoute(outlet)">
+            <router-outlet #outlet="outlet" />
         </main>
     </div>
     } @else {
-    <router-outlet /> }
+    <router-outlet #outlet="outlet" [@routeAnimation]="prepareRoute(outlet)" /> }
 </div>

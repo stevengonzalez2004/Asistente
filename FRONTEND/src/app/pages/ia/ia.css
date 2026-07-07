@@ -26,19 +26,6 @@
     margin: 0;
 }
 
-.notice {
-    margin: 12px 0;
-    padding: 11px 14px;
-    border-radius: 6px;
-    font-weight: 700;
-}
-
-.notice.danger {
-    border: 1px solid #fecaca;
-    background: #fef2f2;
-    color: #991b1b;
-}
-
 .muted {
     color: var(--app-text-muted, #9fb1c8);
     font-size: 12px;
@@ -118,4 +105,23 @@
 
 .chat-input {
     flex: 1;
+}
+
+@media (max-width: 640px) {
+    .ia-shell {
+        padding: var(--space-sm, 8px);
+    }
+
+    .seccion-shell {
+        padding: var(--space-md, 12px) 4px 8px;
+    }
+
+    .burbuja {
+        max-width: 90%;
+    }
+
+    .chat-mensajes {
+        min-height: 200px;
+        max-height: 320px;
+    }
 }

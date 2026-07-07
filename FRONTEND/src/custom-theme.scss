@@ -46,6 +46,57 @@ html {
   --app-overlay-strong: rgba(15, 23, 42, 0.06);
   --app-bg-table-header: rgba(15, 23, 42, 0.05);
   --app-accent-on-surface: #0284c7;
+
+  // Escala de spacing (independiente de tema).
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  // Escala de border-radius (independiente de tema).
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  // Escala tipografica (independiente de tema).
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 34px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-black: 800;
+
+  // Duraciones de motion (independiente de tema).
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 300ms;
+
+  // Colores de marca (independiente de tema).
+  --app-brand-gradient-start: #2563eb;
+  --app-brand-gradient-end: #0f766e;
+  --app-brand-accent: #38bdf8;
+
+  // Elevaciones de sombra (construidas sobre --app-shadow-color, que si varia por tema).
+  --shadow-elevation-1: 0 2px 6px var(--app-shadow-color);
+  --shadow-elevation-2: 0 8px 20px var(--app-shadow-color);
+  --shadow-elevation-3: 0 18px 45px var(--app-shadow-color);
+
+  // Colores semanticos success/danger (valores claro = los ya hardcodeados hoy en notice.css).
+  --app-success-bg: #f0fdf4;
+  --app-success-border: #bbf7d0;
+  --app-success-text: #166534;
+  --app-danger-bg: #fef2f2;
+  --app-danger-border: #fecaca;
+  --app-danger-text: #991b1b;
 }
 
 // ==========================================
@@ -90,6 +141,12 @@ $config-temas: (
       --app-overlay-strong: rgba(255, 255, 255, 0.08);
       --app-bg-table-header: rgba(15, 23, 42, 0.6);
       --app-accent-on-surface: #38bdf8;
+      --app-success-bg: rgba(74, 222, 128, 0.14);
+      --app-success-border: rgba(74, 222, 128, 0.35);
+      --app-success-text: #4ade80;
+      --app-danger-bg: rgba(248, 113, 113, 0.14);
+      --app-danger-border: rgba(248, 113, 113, 0.35);
+      --app-danger-text: #f87171;
     } @else {
       --app-bg-page-start: #eef2f7;
       --app-bg-page-mid: #e4ebf3;
@@ -112,6 +169,12 @@ $config-temas: (
       --app-overlay-strong: rgba(15, 23, 42, 0.06);
       --app-bg-table-header: rgba(15, 23, 42, 0.05);
       --app-accent-on-surface: #0284c7;
+      --app-success-bg: #f0fdf4;
+      --app-success-border: #bbf7d0;
+      --app-success-text: #166534;
+      --app-danger-bg: #fef2f2;
+      --app-danger-border: #fecaca;
+      --app-danger-text: #991b1b;
     }
   }
 }

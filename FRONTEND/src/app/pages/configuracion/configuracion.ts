@@ -10,6 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfiguracionService } from '../../core/configuracion.service';
+import { SnackbarService } from '../../core/snackbar.service';
 import { Configuracion as ConfiguracionModel, RespaldoPayload } from '../../core/models';
 import { Notice } from '../../shared/notice/notice';
 import { PanelCard } from '../../shared/panel-card/panel-card';
@@ -38,10 +39,10 @@ export class Configuracion implements OnInit {
   private readonly api = inject(ApiService);
   private readonly authService = inject(AuthService);
   private readonly configuracionService = inject(ConfiguracionService);
+  private readonly snackbar = inject(SnackbarService);
 
   readonly cargando = signal(true);
   readonly guardando = signal(false);
-  readonly mensaje = signal('');
   readonly error = signal('');
 
   readonly nombreSistema = signal('');
@@ -104,17 +105,15 @@ export class Configuracion implements OnInit {
 
   private guardar(cambios: Partial<ConfiguracionModel>): void {
     this.guardando.set(true);
-    this.mensaje.set('');
-    this.error.set('');
 
     this.configuracionService.actualizarConfiguracion(cambios).subscribe({
       next: () => {
         this.guardando.set(false);
-        this.mensaje.set('Configuracion guardada correctamente.');
+        this.snackbar.exito('Configuracion guardada correctamente.');
       },
       error: (err) => {
         this.guardando.set(false);
-        this.error.set(err?.error?.message || 'No se pudo guardar la configuracion.');
+        this.snackbar.error(err?.error?.message || 'No se pudo guardar la configuracion.');
       },
     });
   }
@@ -129,7 +128,7 @@ export class Configuracion implements OnInit {
         enlace.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.error.set('No se pudo descargar el respaldo.'),
+      error: () => this.snackbar.error('No se pudo descargar el respaldo.'),
     });
   }
 
@@ -144,7 +143,6 @@ export class Configuracion implements OnInit {
 
     this.restaurando.set(true);
     this.error.set('');
-    this.mensaje.set('');
 
     const lector = new FileReader();
     lector.onload = () => {
@@ -160,7 +158,7 @@ export class Configuracion implements OnInit {
       this.api.restaurarRespaldo(datos, this.confirmacionRestaurar()).subscribe({
         next: () => {
           this.restaurando.set(false);
-          this.mensaje.set('Respaldo restaurado correctamente.');
+          this.snackbar.exito('Respaldo restaurado correctamente.');
           this.confirmacionRestaurar.set('');
           this.archivoRestaurar.set(null);
           this.configuracionService.invalidar(); // restaurarRespaldo tambien reemplaza 'configuracion'
@@ -168,7 +166,7 @@ export class Configuracion implements OnInit {
         },
         error: (err) => {
           this.restaurando.set(false);
-          this.error.set(err?.error?.message || 'No se pudo restaurar el respaldo.');
+          this.snackbar.error(err?.error?.message || 'No se pudo restaurar el respaldo.');
         },
       });
     };
@@ -191,18 +189,17 @@ export class Configuracion implements OnInit {
 
     this.cambiandoPassword.set(true);
     this.error.set('');
-    this.mensaje.set('');
 
     this.api.restablecerPassword(idAdmin, nueva).subscribe({
       next: () => {
         this.cambiandoPassword.set(false);
-        this.mensaje.set('Contrasena actualizada correctamente.');
+        this.snackbar.exito('Contrasena actualizada correctamente.');
         this.nuevaPassword.set('');
         this.confirmarPassword.set('');
       },
       error: (err) => {
         this.cambiandoPassword.set(false);
-        this.error.set(err?.error?.message || 'No se pudo actualizar la contrasena.');
+        this.snackbar.error(err?.error?.message || 'No se pudo actualizar la contrasena.');
       },
     });
   }

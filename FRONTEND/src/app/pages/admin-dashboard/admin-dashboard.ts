@@ -22,6 +22,7 @@ import { debounceTime } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { DashboardCacheService } from '../../core/dashboard-cache.service';
+import { SnackbarService } from '../../core/snackbar.service';
 import {
   BalanceAnual,
   BalanceUsuario,
@@ -170,6 +171,7 @@ export class AdminDashboard implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly dashboardCache = inject(DashboardCacheService);
+  private readonly snackbar = inject(SnackbarService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
@@ -185,7 +187,6 @@ export class AdminDashboard implements OnInit {
   readonly seccionActiva = signal<AdminSection>('balances');
   readonly cargandoUsuarios = signal(false);
   readonly cargandoMovimientos = signal(false);
-  readonly mensaje = signal('');
   readonly error = signal('');
 
   readonly totalMovimientos = computed(() => this.movimientos().length);
@@ -735,10 +736,10 @@ export class AdminDashboard implements OnInit {
         if (!result) return;
         this.api.actualizarMovimiento(mov.usuario_id, mov.id, result).subscribe({
           next: () => {
-            this.mensaje.set('Movimiento actualizado.');
+            this.snackbar.exito('Movimiento actualizado.');
             this.cargarMovimientosGlobal();
           },
-          error: (err) => this.error.set(err?.error?.message || 'No se pudo actualizar el movimiento.'),
+          error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo actualizar el movimiento.'),
         });
       });
   }
@@ -758,10 +759,10 @@ export class AdminDashboard implements OnInit {
         if (!confirmado) return;
         this.api.duplicarMovimientoGlobal(mov.id).subscribe({
           next: () => {
-            this.mensaje.set('Movimiento duplicado correctamente.');
+            this.snackbar.exito('Movimiento duplicado correctamente.');
             this.cargarMovimientosGlobal();
           },
-          error: (err) => this.error.set(err?.error?.message || 'No se pudo duplicar el movimiento.'),
+          error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo duplicar el movimiento.'),
         });
       });
   }
@@ -781,10 +782,10 @@ export class AdminDashboard implements OnInit {
         if (!confirmado) return;
         this.api.eliminarMovimiento(mov.usuario_id, mov.id).subscribe({
           next: () => {
-            this.mensaje.set('Movimiento eliminado.');
+            this.snackbar.exito('Movimiento eliminado.');
             this.cargarMovimientosGlobal();
           },
-          error: (err) => this.error.set(err?.error?.message || 'No se pudo eliminar el movimiento.'),
+          error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo eliminar el movimiento.'),
         });
       });
   }
@@ -816,7 +817,7 @@ export class AdminDashboard implements OnInit {
         enlace.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.error.set('No se pudo exportar el archivo CSV.'),
+      error: () => this.snackbar.error('No se pudo exportar el archivo CSV.'),
     });
   }
 
@@ -915,7 +916,7 @@ export class AdminDashboard implements OnInit {
         enlace.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.errorReporte.set('No se pudo exportar el reporte.'),
+      error: () => this.snackbar.error('No se pudo exportar el reporte.'),
     });
   }
 
@@ -938,10 +939,10 @@ export class AdminDashboard implements OnInit {
         if (!result) return;
         this.api.actualizarUsuario(usuario.id, result).subscribe({
           next: () => {
-            this.mensaje.set('Usuario actualizado.');
+            this.snackbar.exito('Usuario actualizado.');
             this.cargarUsuarios();
           },
-          error: (err) => this.error.set(err?.error?.message || 'No se pudo actualizar el usuario.'),
+          error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo actualizar el usuario.'),
         });
       });
   }
@@ -953,8 +954,8 @@ export class AdminDashboard implements OnInit {
       .subscribe((password: string | undefined) => {
         if (!password) return;
         this.api.restablecerPassword(usuario.id, password).subscribe({
-          next: () => this.mensaje.set('Contraseña restablecida.'),
-          error: (err) => this.error.set(err?.error?.message || 'No se pudo restablecer la contraseña.'),
+          next: () => this.snackbar.exito('Contraseña restablecida.'),
+          error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo restablecer la contraseña.'),
         });
       });
   }
@@ -986,11 +987,11 @@ export class AdminDashboard implements OnInit {
 
         const alTerminar = {
           next: () => {
-            this.mensaje.set(activar ? 'Usuario activado.' : 'Usuario desactivado.');
+            this.snackbar.exito(activar ? 'Usuario activado.' : 'Usuario desactivado.');
             this.cargarUsuarios();
           },
           error: (err: { error?: { message?: string } }) =>
-            this.error.set(err?.error?.message || 'No se pudo actualizar el estado del usuario.'),
+            this.snackbar.error(err?.error?.message || 'No se pudo actualizar el estado del usuario.'),
         };
 
         if (activar) {
@@ -1016,14 +1017,14 @@ export class AdminDashboard implements OnInit {
         if (!confirmado) return;
         this.api.deshabilitarUsuario(usuario.id).subscribe({
           next: () => {
-            this.mensaje.set('Usuario eliminado.');
+            this.snackbar.exito('Usuario eliminado.');
             if (this.usuarioSeleccionado()?.id === usuario.id) {
               this.usuarioSeleccionado.set(null);
               this.movimientos.set([]);
             }
             this.cargarUsuarios();
           },
-          error: (err) => this.error.set(err?.error?.message || 'No se pudo eliminar el usuario.'),
+          error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo eliminar el usuario.'),
         });
       });
   }
@@ -1077,12 +1078,12 @@ export class AdminDashboard implements OnInit {
 
     this.api.actualizarMovimiento(usuario.id, movimiento.id, this.movimientoForm.getRawValue()).subscribe({
       next: () => {
-        this.mensaje.set('Movimiento actualizado.');
+        this.snackbar.exito('Movimiento actualizado.');
         this.movimientoEditando.set(null);
         this.cargarMovimientos(usuario.id);
         this.cargarBalanceUsuario(usuario.id);
       },
-      error: (err) => this.error.set(err?.error?.message || 'No se pudo actualizar el movimiento.'),
+      error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo actualizar el movimiento.'),
     });
   }
 
@@ -1092,16 +1093,15 @@ export class AdminDashboard implements OnInit {
 
     this.api.eliminarMovimiento(usuario.id, movimiento.id).subscribe({
       next: () => {
-        this.mensaje.set('Movimiento eliminado.');
+        this.snackbar.exito('Movimiento eliminado.');
         this.movimientos.update((movimientos) => movimientos.filter((item) => item.id !== movimiento.id));
         this.cargarBalanceUsuario(usuario.id);
       },
-      error: (err) => this.error.set(err?.error?.message || 'No se pudo eliminar el movimiento.'),
+      error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo eliminar el movimiento.'),
     });
   }
 
   limpiarAvisos(): void {
-    this.mensaje.set('');
     this.error.set('');
   }
 

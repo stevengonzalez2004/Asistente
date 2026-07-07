@@ -1,15 +1,26 @@
 import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 import { filter, map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from './core/auth.service';
 import { ConfiguracionService } from './core/configuracion.service';
 import { TemaSistema } from './core/models';
 import { ADMIN_NAV_ITEMS, SidebarNavItem, USER_NAV_ITEMS } from './core/sidebar-nav';
 import { ThemeService } from './core/theme.service';
+import { routeFadeAnimation } from './route-animations';
 
 const SIDEBAR_COLLAPSED_KEY = 'asistente_financiero_sidebar_collapsed';
 const NOMBRE_SISTEMA_POR_DEFECTO = 'Asistente';
@@ -18,10 +29,19 @@ const NAVBAR_BRAND_POR_DEFECTO = 'Control Financiero';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatTooltipModule,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [routeFadeAnimation],
 })
 export class App implements OnInit {
   protected readonly adminNavItems: SidebarNavItem[] = ADMIN_NAV_ITEMS;
@@ -33,6 +53,14 @@ export class App implements OnInit {
   protected readonly nombreSistemaSub = signal(NOMBRE_SISTEMA_SUB_POR_DEFECTO);
   protected readonly navbarBrand = signal(NAVBAR_BRAND_POR_DEFECTO);
   protected readonly logoUrl = signal('');
+
+  /** Barra de progreso durante la navegacion (rutas lazy). */
+  protected readonly navegando = signal(false);
+
+  /** Estado del drawer off-canvas del sidebar en movil (<768px). */
+  protected readonly mobileSidebarOpen = signal(false);
+
+  private readonly prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /**
    * Bajo OnPush, leer `router.url` directamente en un getter no es reactivo a la
@@ -54,6 +82,14 @@ export class App implements OnInit {
       ),
       { initialValue: this.router.url },
     );
+
+    this.router.events.subscribe((evento) => {
+      if (evento instanceof NavigationStart) this.navegando.set(true);
+      if (evento instanceof NavigationEnd || evento instanceof NavigationCancel || evento instanceof NavigationError) {
+        this.navegando.set(false);
+        this.mobileSidebarOpen.set(false);
+      }
+    });
 
     const temaInicial = this.themeService.obtenerTema();
     this.tema.set(temaInicial);
@@ -135,6 +171,20 @@ export class App implements OnInit {
   protected toggleSidebar(): void {
     this.sidebarCollapsed.update((colapsado) => !colapsado);
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(this.sidebarCollapsed()));
+  }
+
+  protected toggleMobileSidebar(): void {
+    this.mobileSidebarOpen.update((abierto) => !abierto);
+  }
+
+  protected closeMobileSidebar(): void {
+    this.mobileSidebarOpen.set(false);
+  }
+
+  /** Lee `data.animation` de la ruta activa; devuelve '' (no-op) si el usuario prefiere movimiento reducido. */
+  protected prepareRoute(outlet: RouterOutlet): string {
+    if (this.prefersReducedMotion) return '';
+    return outlet?.isActivated ? (outlet.activatedRouteData['animation'] ?? '') : '';
   }
 
   protected logout(): void {

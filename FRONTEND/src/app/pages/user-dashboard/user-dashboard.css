@@ -18,14 +18,14 @@ h2 {
 .recent-list {
     display: flex;
     align-items: center;
-    color: #047857
+    color: var(--app-text-primary, #0f172a);
 }
 
 .topbar,
 .section-title {
     justify-content: space-between;
     gap: 14px;
-    color: #047857
+    color: var(--app-text-primary, #0f172a);
 }
 
 .topbar {
@@ -69,9 +69,9 @@ h2 {
 }
 
 .navbar button.active {
-    border-color: #38bdf8;
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(15, 118, 110, 0.3));
-    color: #38bdf8;
+    border-color: var(--app-brand-accent, #38bdf8);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(56, 189, 248, 0.24));
+    color: var(--app-accent-on-surface, #0284c7);
 }
 
 .metrics,
@@ -89,9 +89,9 @@ h2 {
 .panel-section,
 .account-card,
 .recent-list article {
-    border: 1px solid #047857;
-    border-radius: 8px;
-    background: white;
+    border: 1px solid var(--app-border-color, rgba(15, 23, 42, 0.12));
+    border-radius: var(--radius-sm, 8px);
+    background: linear-gradient(135deg, var(--app-bg-card-start, #fff) 0%, var(--app-bg-card-end, #fff) 100%);
 }
 
 .metrics article,
@@ -111,17 +111,17 @@ label,
 
 .metrics strong {
     font-size: 30px;
-    color: #047857
+    color: var(--app-accent-on-surface, #0284c7);
 }
 
 .balance-card strong {
-    color: #0f766e;
+    color: var(--app-accent-on-surface, #0284c7);
 }
 
 .panel-section {
-    margin-bottom: 16px;
-    padding: 18px;
-    color: #0f766e;
+    margin-bottom: var(--space-lg, 16px);
+    padding: var(--space-xl, 18px);
+    color: var(--app-text-primary, #0f172a);
 }
 
 .accounts-grid {
@@ -134,20 +134,20 @@ label,
 }
 
 .account-card strong {
-    color: #047857;
+    color: var(--app-accent-on-surface, #0284c7);
     font-size: 26px;
 }
 
 .account-card strong.negative,
 .danger {
-    color: #be123c;
+    color: var(--app-danger-text, #be123c);
 }
 
 .table-wrap {
     margin-top: 14px;
     overflow: auto;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border: 1px solid var(--app-border-color, #e2e8f0);
+    border-radius: var(--radius-sm, 8px);
 }
 
 table {
@@ -159,13 +159,13 @@ table {
 th,
 td {
     padding: 12px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--app-border-color, #e2e8f0);
     text-align: left;
 }
 
 th {
-    background: #f8fafc;
-    color: #475569;
+    background: var(--app-bg-table-header, #f8fafc);
+    color: var(--app-text-muted, #475569);
     font-size: 12px;
     text-transform: uppercase;
 }
@@ -193,7 +193,7 @@ form,
 label {
     display: grid;
     gap: 7px;
-    color: #334155;
+    color: var(--app-text-primary, #334155);
 }
 
 input,
@@ -202,11 +202,11 @@ textarea {
     width: 100%;
     min-height: 42px;
     padding: 9px 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    color: #111827;
+    border: 1px solid var(--app-border-color, #cbd5e1);
+    border-radius: var(--radius-sm, 6px);
+    color: var(--app-text-primary, #111827);
     font: inherit;
-    background: white;
+    background: var(--app-bg-card-start, white);
 }
 
 textarea {
@@ -216,20 +216,27 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-    outline: 3px solid rgba(15, 118, 110, 0.16);
-    border-color: #0f766e;
+    outline: 3px solid rgba(56, 189, 248, 0.18);
+    border-color: var(--app-brand-accent, #38bdf8);
 }
 
 button {
     min-height: 40px;
     padding: 0 14px;
     border: 0;
-    border-radius: 6px;
-    background: #0f766e;
+    border-radius: var(--radius-sm, 6px);
+    background: linear-gradient(135deg, var(--app-brand-gradient-start, #2563eb), var(--app-brand-accent, #38bdf8));
     color: white;
     font-weight: 800;
     cursor: pointer;
     white-space: nowrap;
+    transition:
+        filter var(--motion-base, 0.2s) ease,
+        box-shadow var(--motion-base, 0.2s) ease;
+}
+
+button:not(:disabled):not(.ghost-btn):hover {
+    filter: brightness(1.08);
 }
 
 button:disabled {
@@ -238,9 +245,9 @@ button:disabled {
 }
 
 .ghost-btn {
-    border: 1px solid #cbd5e1;
-    background: white;
-    color: #0f172a;
+    border: 1px solid var(--app-border-color, #cbd5e1);
+    background: var(--app-bg-card-start, white);
+    color: var(--app-text-primary, #0f172a);
 }
 
 .chip {
@@ -249,39 +256,21 @@ button:disabled {
     width: fit-content;
     min-height: 22px;
     padding: 3px 7px;
-    border-radius: 6px;
-    background: #ccfbf1;
-    color: #0f766e;
+    border-radius: var(--radius-sm, 6px);
+    background: rgba(56, 189, 248, 0.16);
+    color: var(--app-accent-on-surface, #0284c7);
     font-size: 11px;
     font-weight: 800;
 }
 
-.notice {
-    margin-bottom: 12px;
-    padding: 11px 14px;
-    border-radius: 6px;
-    font-weight: 700;
-}
-
-.success {
-    border: 1px solid #bbf7d0;
-    background: #f0fdf4;
-    color: #166534;
-}
-
-.danger {
-    border: 1px solid #fecaca;
-    background: #fef2f2;
-}
-
 .empty {
     padding: 20px;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     text-align: center;
 }
 
 .recent-section {
-    background: #f8fafc;
+    background: var(--app-bg-card-alt-start, #f8fafc);
 }
 
 .recent-list {
@@ -297,7 +286,7 @@ button:disabled {
 
 .recent-list strong {
     font-size: 20px;
-    color: #047857
+    color: var(--app-accent-on-surface, #0284c7);
 }
 
 @media (max-width: 900px) {
@@ -316,11 +305,10 @@ button:disabled {
     .section-title {
         align-items: flex-start;
         flex-direction: column;
-        color: #047857
+        color: var(--app-text-primary, #0f172a);
     }
     .topbar button,
     .section-title button {
         width: 100%;
-        color: #047857
     }
 }

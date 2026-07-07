@@ -11,5 +11,63 @@ body {
 body {
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f3f7f6;
+  background: var(--app-bg-page-start, #f3f7f6);
+}
+
+/* Red de seguridad para Material Symbols Outlined: define explicitamente la clase por si el
+   CSS que sirve Google (index.html) no llega a tiempo o el navegador la bloquea. mat-icon ya
+   esta configurado (MAT_ICON_DEFAULT_OPTIONS) para aplicar esta clase en vez de 'material-icons'. */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Snackbars (MatSnackBar renderiza en un overlay fuera de cualquier encapsulacion de
+   componente, por eso este estilo vive en el CSS global en vez de en snackbar.service.ts). */
+.app-snackbar {
+  border-radius: var(--radius-sm, 8px);
+}
+
+.app-snackbar-success .mdc-snackbar__surface {
+  background-color: var(--app-success-bg) !important;
+}
+
+.app-snackbar-success .mdc-snackbar__label {
+  color: var(--app-success-text) !important;
+}
+
+.app-snackbar-danger .mdc-snackbar__surface {
+  background-color: var(--app-danger-bg) !important;
+}
+
+.app-snackbar-danger .mdc-snackbar__label {
+  color: var(--app-danger-text) !important;
+}
+
+/* mat-stroked-button (mat-mdc-outlined-button) app-wide: por defecto Angular Material
+   solo define su color de texto/borde, dejando el fondo sin fijar explicitamente - en
+   la practica esto deja el boton con un relleno de bajo contraste en vez de transparente.
+   Se fuerza fondo transparente + texto del token de tema (legible en claro y oscuro). */
+.mat-mdc-outlined-button:not(.mat-mdc-button-disabled) {
+  background-color: transparent !important;
+  color: var(--app-text-primary, #0f172a) !important;
+}
+
+.mat-mdc-outlined-button:not(.mat-mdc-button-disabled) .mat-icon {
+  color: inherit !important;
+}
+
+.mat-mdc-outlined-button:not(.mat-mdc-button-disabled):hover {
+  background-color: var(--app-overlay-strong, rgba(15, 23, 42, 0.06)) !important;
 }

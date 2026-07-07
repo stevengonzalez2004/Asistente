@@ -26,19 +26,6 @@
     margin: 0;
 }
 
-.notice {
-    margin-bottom: 12px;
-    padding: 11px 14px;
-    border-radius: 6px;
-    font-weight: 700;
-}
-
-.notice.danger {
-    border: 1px solid #fecaca;
-    background: #fef2f2;
-    color: #991b1b;
-}
-
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
