@@ -44,6 +44,12 @@
          right: -14px;
          width: 28px !important;
          height: 28px !important;
+         min-width: 28px !important;
+         min-height: 28px !important;
+         padding: 0 !important;
+         display: inline-flex !important;
+         align-items: center !important;
+         justify-content: center !important;
          border-radius: 50%;
          background: var(--app-brand-gradient-end, #0f766e);
          color: var(--app-text-primary, #f8fafc);
@@ -62,7 +68,11 @@
          font-size: 18px;
          width: 18px;
          height: 18px;
-         line-height: 18px;
+         line-height: 1;
+         display: flex !important;
+         align-items: center !important;
+         justify-content: center !important;
+         margin: 0 !important;
      }
      
      .brand-icon {
