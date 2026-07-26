@@ -92,6 +92,18 @@ h2 {
     border: 1px solid var(--app-border-color, rgba(15, 23, 42, 0.12));
     border-radius: var(--radius-sm, 8px);
     background: linear-gradient(135deg, var(--app-bg-card-start, #fff) 0%, var(--app-bg-card-end, #fff) 100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metrics article:hover,
+.account-card:hover,
+.recent-list article:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.panel-section {
+    animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .metrics article,
@@ -161,6 +173,15 @@ td {
     padding: 12px;
     border-bottom: 1px solid var(--app-border-color, #e2e8f0);
     text-align: left;
+    transition: background-color 0.2s ease;
+}
+
+tbody tr {
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+tbody tr:hover {
+    background-color: var(--app-overlay-soft, rgba(56, 189, 248, 0.05));
 }
 
 th {

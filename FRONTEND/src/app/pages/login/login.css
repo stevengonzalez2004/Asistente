@@ -15,6 +15,8 @@
   border-radius: var(--radius-sm, 8px);
   background: linear-gradient(135deg, var(--app-bg-card-start, rgba(255, 255, 255, 0.94)) 0%, var(--app-bg-card-end, rgba(255, 255, 255, 0.94)) 100%);
   box-shadow: var(--shadow-elevation-3, 0 24px 70px rgba(15, 23, 42, 0.26));
+  animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  backdrop-filter: blur(8px);
 }
 
 .brand-block {
@@ -32,6 +34,12 @@
   background: var(--app-brand-gradient-end, #0f766e);
   color: white;
   font-weight: var(--font-weight-black, 800);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.35);
+  transition: transform 0.25s ease;
+}
+
+.mark:hover {
+  transform: scale(1.08) rotate(-3deg);
 }
 
 p,
@@ -53,6 +61,7 @@ h1 {
 .login-form {
   display: grid;
   gap: var(--space-lg, 18px);
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 label {
@@ -73,11 +82,13 @@ input {
   color: var(--app-text-primary, #111827);
   background: var(--app-bg-card-start, white);
   box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 input:focus {
-  outline: 3px solid rgba(20, 184, 166, 0.22);
+  outline: none;
   border-color: var(--app-brand-gradient-end, #0f766e);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.22);
 }
 
 button {
@@ -88,7 +99,17 @@ button {
   color: white;
   font-weight: var(--font-weight-black, 800);
   cursor: pointer;
-  transition: background var(--motion-base, 0.2s) ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  background: #0d655e;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
 }
 
 button:disabled {
@@ -102,6 +123,13 @@ button:disabled {
   background: transparent;
   color: var(--app-brand-gradient-end, #0f766e);
   text-align: center;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.link-btn:hover {
+  color: #0d655e;
+  text-decoration: underline;
+  transform: translateY(-1px);
 }
 
 .helper {

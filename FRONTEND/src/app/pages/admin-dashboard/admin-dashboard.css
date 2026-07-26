@@ -87,6 +87,18 @@ h2 {
     border-radius: 16px;
     background: linear-gradient(135deg, var(--app-bg-card-start, #13253b) 0%, var(--app-bg-card-end, #102132) 100%);
     box-shadow: 0 18px 45px var(--app-shadow-color, rgba(2, 8, 23, 0.35));
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metrics article:hover,
+.account-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 50px var(--app-shadow-color, rgba(2, 8, 23, 0.45));
+}
+
+.users-pane,
+.detail-pane {
+    animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .metrics article,
