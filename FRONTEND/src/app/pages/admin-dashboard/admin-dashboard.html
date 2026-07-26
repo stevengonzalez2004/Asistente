@@ -52,7 +52,7 @@
                                 <mat-icon>{{ mov.tipo === 'GASTO' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
                             </span>
                             <div matListItemTitle>{{ mov.usuario_nombre || mov.usuario_correo || 'Usuario' }} · {{ mov.categoria || 'Sin categoria' }}</div>
-                            <div matListItemLine class="muted">{{ mov.fecha | date: 'short' }} · ${{ mov.monto | number: '1.2-2' }}</div>
+                            <div matListItemLine class="muted">{{ mov.fecha | date: 'dd/MM/yyyy, hh:mm a' }} · ${{ mov.monto | number: '1.2-2' }}</div>
                         </mat-list-item>
                         } @empty {
                         <p class="empty">Sin movimientos recientes.</p>
@@ -71,7 +71,7 @@
                         <mat-list-item>
                             <span class="activity-icon" matListItemIcon><mat-icon>person_add</mat-icon></span>
                             <div matListItemTitle>{{ usuario.nombre || usuario.correo || 'Usuario #' + usuario.id }}</div>
-                            <div matListItemLine class="muted">{{ usuario.created_at | date: 'short' }}</div>
+                            <div matListItemLine class="muted">{{ usuario.created_at | date: 'dd/MM/yyyy, hh:mm a' }}</div>
                         </mat-list-item>
                         } @empty {
                         <p class="empty">Sin usuarios recientes.</p>
@@ -90,7 +90,7 @@
                         <mat-list-item>
                             <span class="activity-icon" matListItemIcon><mat-icon>login</mat-icon></span>
                             <div matListItemTitle>{{ login.nombre || login.correo }}</div>
-                            <div matListItemLine class="muted">{{ login.ultimo_login | date: 'short' }}</div>
+                            <div matListItemLine class="muted">{{ login.ultimo_login | date: 'dd/MM/yyyy, hh:mm a' }}</div>
                         </mat-list-item>
                         } @empty {
                         <p class="empty">Todavia no hay inicios de sesion registrados.</p>
@@ -239,12 +239,12 @@
 
                     <ng-container matColumnDef="created_at">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Registro</th>
-                        <td mat-cell *matCellDef="let u">{{ u.created_at ? (u.created_at | date: 'short') : '-' }}</td>
+                        <td mat-cell *matCellDef="let u">{{ u.created_at ? (u.created_at | date: 'dd/MM/yyyy, hh:mm a') : '-' }}</td>
                     </ng-container>
 
                     <ng-container matColumnDef="ultimo_login">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Ultimo acceso</th>
-                        <td mat-cell *matCellDef="let u">{{ u.ultimo_login ? (u.ultimo_login | date: 'short') : 'Nunca' }}</td>
+                        <td mat-cell *matCellDef="let u">{{ u.ultimo_login ? (u.ultimo_login | date: 'dd/MM/yyyy, hh:mm a') : 'Nunca' }}</td>
                     </ng-container>
 
                     <ng-container matColumnDef="movimientos_count">
@@ -378,7 +378,7 @@
                                     <tbody>
                                         @for (movimiento of movimientos(); track movimiento.id) {
                                         <tr>
-                                            <td>{{ movimiento.fecha ? (movimiento.fecha | date: 'short') : '-' }}</td>
+                                            <td>{{ movimiento.fecha ? (movimiento.fecha | date: 'dd/MM/yyyy, hh:mm a') : '-' }}</td>
                                             <td><span class="chip">{{ tipoMovimiento(movimiento) }}</span></td>
                                             <td>{{ movimiento.categoria || '-' }}</td>
                                             <td>{{ movimiento.cuenta_origen || '-' }}</td>
@@ -512,7 +512,7 @@
 
                 <ng-container matColumnDef="fecha">
                     <th mat-header-cell *matHeaderCellDef mat-sort-header>Fecha</th>
-                    <td mat-cell *matCellDef="let m">{{ m.fecha | date: 'short' }}</td>
+                    <td mat-cell *matCellDef="let m">{{ m.fecha | date: 'dd/MM/yyyy, hh:mm a' }}</td>
                 </ng-container>
 
                 <ng-container matColumnDef="usuario">

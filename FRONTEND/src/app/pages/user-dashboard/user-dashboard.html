@@ -86,7 +86,7 @@
           <tbody>
             @for (movimiento of movimientos(); track movimiento.id) {
               <tr>
-                <td>{{ movimiento.fecha ? (movimiento.fecha | date: 'short') : '-' }}</td>
+                <td>{{ movimiento.fecha ? (movimiento.fecha | date: 'dd/MM/yyyy, hh:mm a') : '-' }}</td>
                 <td><span class="chip">{{ tipoMovimiento(movimiento) }}</span></td>
                 <td>{{ movimiento.categoria || '-' }}</td>
                 <td>{{ movimiento.cuenta_origen || '-' }}</td>
@@ -182,7 +182,7 @@
         <article>
           <span class="chip">{{ tipoMovimiento(movimiento) }}</span>
           <strong>${{ movimiento.monto | number: '1.2-2' }}</strong>
-          <small>{{ movimiento.fecha ? (movimiento.fecha | date: 'short') : '-' }}</small>
+          <small>{{ movimiento.fecha ? (movimiento.fecha | date: 'dd/MM/yyyy, hh:mm a') : '-' }}</small>
         </article>
       } @empty {
         <p class="empty">Tus ultimos movimientos apareceran aqui.</p>
