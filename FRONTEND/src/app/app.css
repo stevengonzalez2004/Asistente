@@ -450,7 +450,19 @@
      .soon-badge {
          opacity: 1;
          white-space: nowrap;
-         transition: opacity 0.18s ease;
+         transition: opacity 0.18s ease, width 0.18s ease;
+     }
+
+     .global-sidebar.collapsed .sidebar-brand {
+         justify-content: center;
+         padding: 0 0 20px;
+         gap: 0;
+     }
+
+     .global-sidebar.collapsed .brand-icon {
+         width: 44px;
+         height: 44px;
+         margin: 0 auto;
      }
 
      .global-sidebar.collapsed .brand-text,
@@ -461,32 +473,64 @@
          opacity: 0;
          width: 0;
          height: 0;
+         margin: 0;
+         padding: 0;
          overflow: hidden;
          pointer-events: none;
      }
 
      .global-sidebar.collapsed .collapse-toggle {
          right: -14px;
+         top: 24px;
      }
 
      .global-sidebar.collapsed .sidebar-user-card {
          justify-content: center;
-         padding: 10px;
-         margin: 16px 10px 20px;
+         align-items: center;
+         padding: 8px 0;
+         margin: 14px auto 18px;
+         gap: 0;
+         width: 52px;
+         border-radius: 12px;
+     }
+
+     .global-sidebar.collapsed .user-avatar {
+         width: 36px;
+         height: 36px;
+         margin: 0 auto;
      }
 
      .global-sidebar.collapsed .sidebar-menu {
-         padding: 4px 10px 16px;
+         padding: 4px 8px 16px;
+         align-items: center;
      }
 
      .global-sidebar.collapsed .menu-item,
      .global-sidebar.collapsed .logout-btn {
          justify-content: center;
-         padding: 12px 0;
+         align-items: center;
+         width: 48px;
+         height: 48px;
+         padding: 0;
+         margin: 0 auto 4px;
          gap: 0;
+         border-radius: 12px;
+     }
+
+     .global-sidebar.collapsed .menu-item .icon,
+     .global-sidebar.collapsed .logout-btn .icon {
+         font-size: 20px;
+         width: 20px;
+         height: 20px;
+         margin: 0;
+         display: flex;
+         align-items: center;
+         justify-content: center;
      }
 
      .global-sidebar.collapsed .menu-item.active {
          border-left: none;
-         box-shadow: inset 3px 0 0 var(--app-brand-accent, #38bdf8);
+         background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(15, 118, 110, 0.35));
+         border: 1px solid rgba(56, 189, 248, 0.4);
+         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
      }
