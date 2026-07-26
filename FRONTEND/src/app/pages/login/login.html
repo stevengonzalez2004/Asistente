@@ -10,11 +10,15 @@
       <label>
         Correo
         <input type="email" formControlName="correo" autocomplete="email" placeholder="admin@correo.com" />
+        <span *ngIf="form.controls.correo.touched && form.controls.correo.hasError('required')" class="field-error">El correo es obligatorio.</span>
+        <span *ngIf="form.controls.correo.touched && form.controls.correo.hasError('email')" class="field-error">Ingresa un correo valido.</span>
       </label>
 
       <label>
         Contrasena
         <input type="password" formControlName="password" autocomplete="current-password" placeholder="Minimo 6 caracteres" />
+        <span *ngIf="form.controls.password.touched && form.controls.password.hasError('required')" class="field-error">La contrasena es obligatoria.</span>
+        <span *ngIf="form.controls.password.touched && form.controls.password.hasError('minlength')" class="field-error">La contrasena debe tener al menos 6 caracteres.</span>
       </label>
 
       <p *ngIf="mensaje()" class="alert success">{{ mensaje() }}</p>
@@ -32,21 +36,29 @@
       <label>
         Nombre
         <input type="text" formControlName="nombre" autocomplete="name" placeholder="Tu nombre" />
+        <span *ngIf="registroForm.controls.nombre.touched && registroForm.controls.nombre.hasError('required')" class="field-error">El nombre es obligatorio.</span>
+        <span *ngIf="registroForm.controls.nombre.touched && registroForm.controls.nombre.hasError('minlength')" class="field-error">El nombre debe tener al menos 2 caracteres.</span>
       </label>
 
       <label>
         Correo
         <input type="email" formControlName="correo" autocomplete="email" placeholder="correo@dominio.com" />
+        <span *ngIf="registroForm.controls.correo.touched && registroForm.controls.correo.hasError('required')" class="field-error">El correo es obligatorio.</span>
+        <span *ngIf="registroForm.controls.correo.touched && registroForm.controls.correo.hasError('email')" class="field-error">Ingresa un correo valido.</span>
       </label>
 
       <label>
         Contrasena
         <input type="password" formControlName="password" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+        <span *ngIf="registroForm.controls.password.touched && registroForm.controls.password.hasError('required')" class="field-error">La contrasena es obligatoria.</span>
+        <span *ngIf="registroForm.controls.password.touched && registroForm.controls.password.hasError('minlength')" class="field-error">Minimo 6 caracteres.</span>
       </label>
 
       <label>
         Confirmar contrasena
         <input type="password" formControlName="confirmarPassword" autocomplete="new-password" placeholder="Repite la contrasena" />
+        <span *ngIf="registroForm.controls.confirmarPassword.touched && registroForm.controls.confirmarPassword.hasError('required')" class="field-error">Confirma tu contrasena.</span>
+        <span *ngIf="registroForm.controls.confirmarPassword.touched && registroForm.controls.password.value !== registroForm.controls.confirmarPassword.value" class="field-error">Las contrasenas no coinciden.</span>
       </label>
 
       <p *ngIf="error()" class="alert">{{ error() }}</p>
@@ -61,6 +73,8 @@
       <label>
         Correo
         <input type="email" formControlName="correo" autocomplete="email" placeholder="correo@dominio.com" />
+        <span *ngIf="recuperacionForm.controls.correo.touched && recuperacionForm.controls.correo.hasError('required')" class="field-error">El correo es obligatorio.</span>
+        <span *ngIf="recuperacionForm.controls.correo.touched && recuperacionForm.controls.correo.hasError('email')" class="field-error">Ingresa un correo valido.</span>
       </label>
 
       <p *ngIf="error()" class="alert">{{ error() }}</p>
@@ -77,6 +91,8 @@
       <label>
         Codigo
         <input type="text" formControlName="codigoIngresado" inputmode="numeric" autocomplete="one-time-code" placeholder="6 digitos" />
+        <span *ngIf="codigoForm.controls.codigoIngresado.touched && codigoForm.controls.codigoIngresado.hasError('required')" class="field-error">El codigo es obligatorio.</span>
+        <span *ngIf="codigoForm.controls.codigoIngresado.touched && (codigoForm.controls.codigoIngresado.hasError('minlength') || codigoForm.controls.codigoIngresado.hasError('maxlength'))" class="field-error">El codigo debe ser de 6 digitos.</span>
       </label>
 
       <p *ngIf="mensaje()" class="alert success">{{ mensaje() }}</p>
@@ -92,11 +108,15 @@
       <label>
         Nueva contrasena
         <input type="password" formControlName="nuevaContrasena" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+        <span *ngIf="nuevaPasswordForm.controls.nuevaContrasena.touched && nuevaPasswordForm.controls.nuevaContrasena.hasError('required')" class="field-error">La nueva contrasena es obligatoria.</span>
+        <span *ngIf="nuevaPasswordForm.controls.nuevaContrasena.touched && nuevaPasswordForm.controls.nuevaContrasena.hasError('minlength')" class="field-error">Minimo 6 caracteres.</span>
       </label>
 
       <label>
         Confirmar contrasena
         <input type="password" formControlName="confirmarContrasena" autocomplete="new-password" placeholder="Repite la contrasena" />
+        <span *ngIf="nuevaPasswordForm.controls.confirmarContrasena.touched && nuevaPasswordForm.controls.confirmarContrasena.hasError('required')" class="field-error">Confirma la contrasena.</span>
+        <span *ngIf="nuevaPasswordForm.controls.confirmarContrasena.touched && nuevaPasswordForm.controls.nuevaContrasena.value !== nuevaPasswordForm.controls.confirmarContrasena.value" class="field-error">Las contrasenas no coinciden.</span>
       </label>
 
       <p *ngIf="mensaje()" class="alert success">{{ mensaje() }}</p>

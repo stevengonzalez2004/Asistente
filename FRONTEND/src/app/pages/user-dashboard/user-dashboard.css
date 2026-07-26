@@ -220,6 +220,20 @@ textarea:focus {
     border-color: var(--app-brand-accent, #38bdf8);
 }
 
+.field-error {
+    color: #dc2626;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+input.ng-invalid.ng-touched,
+select.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-touched {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+}
+
 button {
     min-height: 40px;
     padding: 0 14px;

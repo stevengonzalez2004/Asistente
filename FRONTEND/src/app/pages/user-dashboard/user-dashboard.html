@@ -112,6 +112,8 @@
         <label>
           Nombre de la cuenta
           <input formControlName="nombre" placeholder="Efectivo, Banco, Ahorros" />
+          <span *ngIf="cuentaForm.controls.nombre.touched && cuentaForm.controls.nombre.hasError('required')" class="field-error">El nombre de la cuenta es obligatorio.</span>
+          <span *ngIf="cuentaForm.controls.nombre.touched && cuentaForm.controls.nombre.hasError('minlength')" class="field-error">El nombre debe tener al menos 2 caracteres.</span>
         </label>
         <button type="submit" [disabled]="guardandoCuenta()">
           {{ guardandoCuenta() ? 'Creando...' : 'Crear cuenta' }}
@@ -135,10 +137,13 @@
         <label>
           Categoria
           <input formControlName="categoria" placeholder="Comida, salario, servicios" />
+          <span *ngIf="movimientoForm.controls.categoria.touched && movimientoForm.controls.categoria.hasError('required')" class="field-error">La categoria es obligatoria.</span>
         </label>
         <label>
           Monto
           <input type="number" min="0.01" step="0.01" formControlName="monto" />
+          <span *ngIf="movimientoForm.controls.monto.touched && movimientoForm.controls.monto.hasError('required')" class="field-error">El monto es obligatorio.</span>
+          <span *ngIf="movimientoForm.controls.monto.touched && (movimientoForm.controls.monto.hasError('min') || movimientoForm.controls.monto.value <= 0)" class="field-error">El monto debe ser mayor a 0.</span>
         </label>
         <label>
           Cuenta origen
@@ -148,6 +153,7 @@
               <option [value]="cuenta.nombre">{{ cuenta.nombre }}</option>
             }
           </select>
+          <span *ngIf="movimientoForm.controls.cuenta_origen.touched && movimientoForm.controls.cuenta_origen.hasError('required')" class="field-error">La cuenta origen es obligatoria.</span>
         </label>
         <label>
           Cuenta destino
@@ -157,6 +163,8 @@
               <option [value]="cuenta.nombre">{{ cuenta.nombre }}</option>
             }
           </select>
+          <span *ngIf="movimientoForm.controls.tipo.value === 'TRANSFERENCIA' && movimientoForm.controls.cuenta_destino.touched && !movimientoForm.controls.cuenta_destino.value" class="field-error">Debes seleccionar una cuenta destino para transferencias.</span>
+          <span *ngIf="movimientoForm.controls.tipo.value === 'TRANSFERENCIA' && movimientoForm.controls.cuenta_origen.value && movimientoForm.controls.cuenta_destino.value && movimientoForm.controls.cuenta_origen.value === movimientoForm.controls.cuenta_destino.value" class="field-error">La cuenta destino no puede ser igual a la de origen.</span>
         </label>
         <label>
           Metodo de pago

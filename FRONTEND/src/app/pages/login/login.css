@@ -124,6 +124,20 @@ button:disabled {
   color: var(--app-success-text, #166534);
 }
 
+.field-error {
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+input.ng-invalid.ng-touched,
+select.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-touched {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
 @media (max-width: 480px) {
   .login-panel {
     padding: var(--space-lg, 16px);
