@@ -1,3 +1,4 @@
+const { OAuth2Client } = require('google-auth-library');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const usuariosModel = require('../models/usuariosModel');
@@ -6,9 +7,109 @@ const authService = require('../services/authService');
 const logger = require('../utils/logger');
 const { registrarAuditoria } = require('../utils/auditoria');
 
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 // ==========================================
 // 1. LOGIN Y REGISTRO
 // ==========================================
+
+/**
+ * Autentica o registra un usuario autenticado mediante el ID Token oficial de Google.
+ * @route POST /api/auth/google
+ */
+exports.loginConGoogle = async (req, res, next) => {
+    try {
+        const { credential, idToken } = req.body;
+        const tokenGoogle = credential || idToken;
+
+        if (!tokenGoogle) {
+            return res.status(400).json({ message: 'El token de autenticación de Google es requerido.' });
+        }
+
+        // Verificación criptográfica oficial con el Client ID de Google Cloud Console
+        let ticket;
+        try {
+            ticket = await googleClient.verifyIdToken({
+                idToken: tokenGoogle,
+                audience: process.env.GOOGLE_CLIENT_ID,
+            });
+        } catch (err) {
+            logger.warn('Intento de login con Google fallido: verificación de token rechazada.');
+            return res.status(400).json({ message: 'El token de Google es inválido o ha expirado.' });
+        }
+
+        const payload = ticket.getPayload();
+        const { sub: googleId, email: correo, name: nombre, picture: fotoUrl } = payload;
+
+        if (!correo) {
+            return res.status(400).json({ message: 'No se pudo obtener el correo asociado a la cuenta de Google.' });
+        }
+
+        // 1. Buscar usuario por google_id
+        let resGoogle = await usuariosModel.BuscarPorGoogleId(googleId);
+        let usuario = resGoogle.rows[0];
+
+        // 2. Si no existe por google_id, buscar por correo
+        if (!usuario) {
+            const resCorreo = await usuariosModel.BuscarPorCorreo(correo);
+            if (resCorreo.rows.length > 0) {
+                usuario = resCorreo.rows[0];
+                // Vincular google_id y asignar foto_url SOLO SI el usuario no tiene ninguna foto establecida
+                const resUpdate = await require('../config/db').query(`
+                    UPDATE usuarios 
+                    SET google_id = $1, 
+                        foto_url = COALESCE(NULLIF(foto_url, ''), $2) 
+                    WHERE id = $3 
+                    RETURNING *;
+                `, [googleId, fotoUrl || null, usuario.id]);
+                usuario = resUpdate.rows[0];
+                logger.info(`Cuenta existente vinculada a Google ID para el correo ${correo}.`);
+            } else {
+                // Registrar nuevo usuario desde Google guardando foto_url por defecto
+                const resNew = await require('../config/db').query(`
+                    INSERT INTO usuarios (nombre, correo, google_id, foto_url, rol)
+                    VALUES ($1, $2, $3, $4, 'USUARIO')
+                    RETURNING id, nombre, correo, rol, created_at, foto_url;
+                `, [nombre || correo.split('@')[0], correo, googleId, fotoUrl || null]);
+                usuario = resNew.rows[0];
+                logger.info(`Nuevo usuario creado mediante Google Sign-In: ${correo}.`);
+                await registrarAuditoria(req, { accion: 'REGISTRO_GOOGLE', entidad: 'usuarios', entidadId: usuario.id, detalle: { correo } });
+            }
+        } else if (fotoUrl && (!usuario.foto_url || usuario.foto_url.trim() === '')) {
+            // Asignar foto de Google SOLO SI la cuenta no tiene foto previa
+            await require('../config/db').query('UPDATE usuarios SET foto_url = $1 WHERE id = $2', [fotoUrl, usuario.id]);
+            usuario.foto_url = fotoUrl;
+        }
+
+        await usuariosModel.ActualizarUltimoLogin(usuario.id);
+
+        const jwtPayload = { id: usuario.id, correo: usuario.correo, rol: usuario.rol || 'USUARIO' };
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            throw new Error('ERROR CRÍTICO: La variable JWT_SECRET no está definida en las variables de entorno.');
+        }
+
+        const token = jwt.sign(jwtPayload, secret, { algorithm: 'HS256', expiresIn: '30m' });
+        const refreshToken = jwt.sign({ id: usuario.id }, process.env.REFRESH_JWT_SECRET, {
+            algorithm: 'HS256',
+            expiresIn: '30d',
+        });
+
+        logger.info(`Login con Google exitoso: usuario ${usuario.id} (${usuario.correo}).`);
+        req.usuario = { id: usuario.id, correo: usuario.correo, rol: usuario.rol || 'USUARIO' };
+        await registrarAuditoria(req, { accion: 'LOGIN_GOOGLE', entidad: 'usuarios', entidadId: usuario.id });
+
+        res.status(200).json({
+            message: 'Login con Google exitoso',
+            token,
+            refreshToken,
+            usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol || 'USUARIO', foto_url: usuario.foto_url || null }
+        });
+    } catch (error) {
+        logger.error('Error en login con Google:', error);
+        next(error);
+    }
+};
 
 /**
  * Autentica un usuario por correo/password y emite un JWT.
@@ -54,7 +155,7 @@ exports.login = async (req, res, next) => {
             message: 'Login exitoso',
             token,
             refreshToken,
-            usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol }
+            usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol, foto_url: usuario.foto_url || null }
         });
     } catch (error) {
         logger.error('Error en login:', error);

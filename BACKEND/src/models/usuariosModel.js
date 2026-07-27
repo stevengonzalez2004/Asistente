@@ -17,6 +17,33 @@ class UsuariosModel {
     }
 
     /**
+     * Busca un usuario por su Google ID.
+     * @param {string} googleId ID único de usuario de Google.
+     */
+    async BuscarPorGoogleId(googleId) {
+        return await db.query(usuariosQueries.BUSCAR_POR_GOOGLE_ID, [googleId]);
+    }
+
+    /**
+     * Asocia el Google ID a una cuenta de usuario existente.
+     * @param {number} id ID del usuario en la base de datos.
+     * @param {string} googleId ID de Google a vincular.
+     */
+    async VincularGoogleId(id, googleId) {
+        const res = await db.query(usuariosQueries.VINCULAR_GOOGLE_ID, [googleId, id]);
+        return res.rows[0];
+    }
+
+    /**
+     * Registra un nuevo usuario proveniente de Google Sign-In.
+     * @param {object} datos { nombre, correo, googleId }
+     */
+    async RegistroGoogle({ nombre, correo, googleId }) {
+        const res = await db.query(usuariosQueries.REGISTRO_GOOGLE, [nombre, correo, googleId]);
+        return res.rows[0];
+    }
+
+    /**
      * Registra un nuevo usuario delegando la inserción a fx_registro_completo.
      * @param {object} datos Datos del usuario (nombre, correo, password).
      */

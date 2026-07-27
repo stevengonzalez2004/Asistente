@@ -34,12 +34,21 @@
         </div>
 
         <div
-            class="sidebar-user-card"
-            [matTooltip]="userName + ' — ' + roleLabel + ' — ' + estadoLabel"
-            [matTooltipDisabled]="!sidebarCollapsed()"
+            class="sidebar-user-card clickable-profile-card"
+            (click)="irAMiPerfil()"
+            [matTooltip]="sidebarCollapsed() ? (userName + ' — Mi Perfil') : 'Hacé clic para ver Mi Perfil'"
             matTooltipPosition="right"
+            tabindex="0"
+            role="button"
+            (keyup.enter)="irAMiPerfil()"
         >
-            <div class="user-avatar">{{ avatarInitials }}</div>
+            <div class="user-avatar">
+                @if (userFotoUrl) {
+                    <img [src]="userFotoUrl" [alt]="userName" class="sidebar-avatar-img" />
+                } @else {
+                    <span>{{ avatarInitials }}</span>
+                }
+            </div>
             <div class="user-info-text">
                 <span class="user-info-name">{{ userName }}</span>
                 <span class="user-info-role">{{ roleLabel }}</span>

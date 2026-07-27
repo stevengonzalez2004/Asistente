@@ -6,6 +6,8 @@ import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 import { MAT_TOOLTIP_DEFAULT_OPTIONS } from '@angular/material/tooltip';
 
+import { DATE_PIPE_DEFAULT_OPTIONS } from '@angular/common';
+
 import { authInterceptor } from './core/auth.interceptor';
 import { routes } from './app.routes';
 
@@ -16,6 +18,10 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
+    {
+      provide: DATE_PIPE_DEFAULT_OPTIONS,
+      useValue: { timezone: 'America/Guayaquil' },
+    },
     {
       provide: MAT_DIALOG_DEFAULT_OPTIONS,
       useValue: {

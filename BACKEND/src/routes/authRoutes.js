@@ -17,6 +17,7 @@ const {
 // RUTAS PÚBLICAS (Login y Registro)
 // ==========================================
 router.post('/login', limiterAuth, validarLogin, validarCampos, asyncHandler(authController.login));
+router.post('/google', limiterAuth, asyncHandler(authController.loginConGoogle));
 router.post('/register', limiterAuth, validarRegistro, validarCampos, asyncHandler(authController.registroPublico)); // Mantenida por compatibilidad
 router.post('/registro', limiterAuth, validarRegistro, validarCampos, asyncHandler(authController.registroPublico));
 

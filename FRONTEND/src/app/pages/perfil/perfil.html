@@ -1,0 +1,227 @@
+<div class="perfil-page">
+  <!-- HERO HEAD HEADER -->
+  <header class="perfil-hero-card">
+    <div class="avatar-glow-ring" (click)="fileInputHero.click()" title="Cambiar foto de perfil">
+      <img *ngIf="fotoGuardada" [src]="fotoGuardada" [alt]="miPerfil()?.nombre || 'Avatar'" class="avatar-img-large" />
+      <div *ngIf="!fotoGuardada" class="avatar-circle-large">{{ avatarInitials }}</div>
+      <div class="avatar-upload-overlay">
+        <mat-icon>photo_camera</mat-icon>
+      </div>
+    </div>
+    <input #fileInputHero type="file" (change)="seleccionarFoto($event)" accept="image/*" style="display: none;" />
+
+    <div class="hero-info">
+      <h1>{{ miPerfil()?.nombre || usuario()?.nombre || 'Mi Perfil' }}</h1>
+      <p class="hero-email">{{ miPerfil()?.correo || usuario()?.correo }}</p>
+      <div class="hero-badges">
+        <span class="role-badge">{{ (miPerfil()?.rol || usuario()?.rol || 'USUARIO') | uppercase }}</span>
+        <span class="status-dot-badge">
+          <span class="dot"></span> ACTIVO
+        </span>
+        <span class="date-badge" *ngIf="miPerfil()?.createdAt">
+          Miembro desde {{ miPerfil()?.createdAt | date:'MMM yyyy' }}
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="perfil-tabs-bar" aria-label="Pestañas de Perfil">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva() === 'datos'"
+      (click)="cambiarTab('datos')"
+    >
+      <mat-icon>person</mat-icon>
+      Información Personal
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva() === 'seguridad'"
+      (click)="cambiarTab('seguridad')"
+    >
+      <mat-icon>lock</mat-icon>
+      Seguridad y Contraseña
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva() === 'google'"
+      (click)="cambiarTab('google')"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+      Google Sign-In
+    </button>
+  </nav>
+
+  <!-- TAB CONTENT -->
+  <main class="perfil-tab-panel">
+    <!-- TAB 1: INFORMACIÓN PERSONAL -->
+    @if (tabActiva() === 'datos') {
+      <section class="section-card">
+        <div class="card-header">
+          <h2>Foto de Perfil</h2>
+          <p>Sube o actualiza la foto de tu perfil para personalizar tu cuenta.</p>
+        </div>
+
+        <div class="avatar-upload-box">
+          <div class="avatar-preview-wrap">
+            <img *ngIf="fotoVigente" [src]="fotoVigente" class="avatar-img-preview" alt="Foto de perfil" />
+            <div *ngIf="!fotoVigente" class="avatar-circle-preview">{{ avatarInitials }}</div>
+          </div>
+          <div class="avatar-upload-info">
+            <div class="avatar-button-row">
+              @if (fotoSeleccionadaBase64()) {
+                <button type="button" class="btn-upload-avatar" (click)="guardarFotoSeleccionada()" [disabled]="subiendoFoto()">
+                  <mat-icon>save</mat-icon>
+                  {{ subiendoFoto() ? 'Actualizando foto...' : 'Guardar Nueva Foto' }}
+                </button>
+                <button type="button" class="btn-cancel-avatar" (click)="cancelarFotoSeleccionada()" [disabled]="subiendoFoto()">
+                  Cancelar
+                </button>
+              } @else {
+                <button type="button" class="btn-upload-avatar" (click)="fileInputTab.click()" [disabled]="subiendoFoto() || eliminandoFoto()">
+                  <mat-icon>cloud_upload</mat-icon>
+                  {{ subiendoFoto() ? 'Actualizando foto...' : 'Seleccionar Nueva Foto' }}
+                </button>
+                <button *ngIf="fotoGuardada" type="button" class="btn-delete-avatar" (click)="eliminarFoto()" [disabled]="subiendoFoto() || eliminandoFoto()">
+                  <mat-icon>delete_forever</mat-icon>
+                  {{ eliminandoFoto() ? 'Eliminando...' : 'Eliminar Foto' }}
+                </button>
+              }
+            </div>
+            <input #fileInputTab type="file" (change)="seleccionarFoto($event)" accept="image/*" style="display: none;" />
+            <span class="field-hint">
+              @if (fotoSeleccionadaBase64()) {
+                <strong style="color: #38bdf8;">✓ Previsualización activa. Haz clic en "Guardar Nueva Foto" para confirmar los cambios.</strong>
+              } @else {
+                Formatos soportados: JPG, PNG, WEBP (Máx. 5 MB).
+              }
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="card-header">
+          <h2>Información Básica</h2>
+          <p>Gestiona tu nombre visible y consulta los datos principales de tu cuenta.</p>
+        </div>
+
+        <form [formGroup]="perfilForm" (ngSubmit)="guardarNombre()" class="perfil-form">
+          <label>
+            Correo Electrónico
+            <input type="email" [value]="miPerfil()?.correo || usuario()?.correo" readonly disabled class="readonly-input" />
+            <span class="field-hint">El correo electrónico no puede ser modificado directamente.</span>
+          </label>
+
+          <label>
+            Nombre Completo
+            <input type="text" formControlName="nombre" placeholder="Ingresa tu nombre completo" />
+            <span *ngIf="perfilForm.controls.nombre.touched && perfilForm.controls.nombre.hasError('required')" class="field-error">El nombre es obligatorio.</span>
+            <span *ngIf="perfilForm.controls.nombre.touched && perfilForm.controls.nombre.hasError('minlength')" class="field-error">Mínimo 2 caracteres.</span>
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="submit-btn" [disabled]="guardandoNombre()">
+              {{ guardandoNombre() ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <!-- TAB 2: SEGURIDAD Y CONTRASEÑA -->
+    @if (tabActiva() === 'seguridad') {
+      <section class="section-card">
+        <div class="card-header">
+          <h2>Seguridad de la Cuenta</h2>
+          <p>Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
+        </div>
+
+        <div class="last-login-audit-box" *ngIf="miPerfil()?.ultimoLogin">
+          <mat-icon>history</mat-icon>
+          <span>Último inicio de sesión registrado: <strong>{{ miPerfil()?.ultimoLogin | date:'dd/MM/yyyy, hh:mm a' }}</strong></span>
+        </div>
+
+        <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" class="perfil-form">
+          <label *ngIf="miPerfil()?.tienePassword">
+            Contraseña Actual
+            <div class="password-input-wrap">
+              <input [type]="verPassword() ? 'text' : 'password'" formControlName="passwordActual" placeholder="Ingresa tu contraseña actual" />
+              <button type="button" class="eye-toggle-btn" (click)="toggleVerPassword()">
+                <mat-icon>{{ verPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+          </label>
+
+          <label>
+            Nueva Contraseña
+            <div class="password-input-wrap">
+              <input [type]="verPassword() ? 'text' : 'password'" formControlName="nuevaPassword" placeholder="Mínimo 6 caracteres" />
+              <button type="button" class="eye-toggle-btn" (click)="toggleVerPassword()">
+                <mat-icon>{{ verPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+            <span *ngIf="passwordForm.controls.nuevaPassword.touched && passwordForm.controls.nuevaPassword.hasError('required')" class="field-error">La nueva contraseña es obligatoria.</span>
+            <span *ngIf="passwordForm.controls.nuevaPassword.touched && passwordForm.controls.nuevaPassword.hasError('minlength')" class="field-error">Mínimo 6 caracteres.</span>
+          </label>
+
+          <label>
+            Confirmar Nueva Contraseña
+            <div class="password-input-wrap">
+              <input [type]="verPassword() ? 'text' : 'password'" formControlName="confirmarPassword" placeholder="Repite la nueva contraseña" />
+              <button type="button" class="eye-toggle-btn" (click)="toggleVerPassword()">
+                <mat-icon>{{ verPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+            <span *ngIf="passwordForm.controls.confirmarPassword.touched && passwordForm.controls.confirmarPassword.value !== passwordForm.controls.nuevaPassword.value" class="field-error">Las contraseñas no coinciden.</span>
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="submit-btn" [disabled]="guardandoPassword()">
+              {{ guardandoPassword() ? 'Actualizando...' : 'Actualizar Contraseña' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <!-- TAB 3: GOOGLE SIGN-IN -->
+    @if (tabActiva() === 'google') {
+      <section class="section-card">
+        <div class="card-header">
+          <h2>Autenticación con Google</h2>
+          <p>Vincula tu cuenta con Google OAuth 2.0 para iniciar sesión de manera rápida y segura.</p>
+        </div>
+
+        <div class="google-status-box">
+          <div class="google-brand-row">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+            <div class="google-info">
+              <h3>Estado de la cuenta</h3>
+              <span class="status-chip" [class.linked]="miPerfil()?.tieneGoogle">
+                {{ miPerfil()?.tieneGoogle ? 'Cuenta Vinculada ✓' : 'No Vinculada' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="google-action-zone">
+            @if (miPerfil()?.tieneGoogle) {
+              <button type="button" class="btn-danger-link" (click)="desvincularGoogle()" [disabled]="procesandoGoogle()">
+                {{ procesandoGoogle() ? 'Desvinculando...' : 'Desvincular Cuenta de Google' }}
+              </button>
+            } @else {
+              <button type="button" class="btn-google-link" (click)="vincularConGoogleOAuthDirecto()" [disabled]="procesandoGoogle()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+                Vincular con Cuenta de Google
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+    }
+  </main>
+</div>

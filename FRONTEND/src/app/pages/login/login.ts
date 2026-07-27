@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, NgZone, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -13,10 +13,13 @@ type LoginModo = 'login' | 'registro' | 'recuperar' | 'codigo' | 'nueva';
   styleUrl: './login.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Login {
+export class Login implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly ngZone = inject(NgZone);
+
+  private readonly googleClientId = '94382187078-los2gff6ktv0r9bhv89jn3eice20g9s0.apps.googleusercontent.com';
 
   readonly cargando = signal(false);
   readonly error = signal('');
@@ -24,6 +27,67 @@ export class Login {
   readonly modo = signal<LoginModo>('login');
   readonly correoRecuperacion = signal('');
   readonly verPassword = signal(false);
+
+  ngOnInit(): void {
+    this.verificarGoogleCallbackHash();
+  }
+
+  private verificarGoogleCallbackHash(): void {
+    const hash = window.location.hash;
+    if (hash && hash.includes('id_token=')) {
+      const params = new URLSearchParams(hash.replace('#', ''));
+      const idToken = params.get('id_token');
+      if (idToken) {
+        window.history.replaceState(null, '', window.location.pathname);
+        this.cargando.set(true);
+        this.auth.loginConGoogle(idToken).subscribe({
+          next: () => {
+            this.cargando.set(false);
+            const user = this.auth.usuario();
+            if (user?.rol === 'ADMIN' || user?.rol === 'ADMINISTRADOR') {
+              this.router.navigate(['/admin']);
+            } else {
+              this.router.navigate(['/usuario']);
+            }
+          },
+          error: (err: any) => {
+            this.cargando.set(false);
+            this.error.set(err?.error?.message || 'Error al iniciar sesión con Google.');
+          },
+        });
+      }
+    }
+  }
+
+  iniciarGoogleOAuthDirecto(): void {
+    const clientId = this.googleClientId;
+    const redirectUri = window.location.origin + '/login';
+    const scope = 'openid email profile';
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${encodeURIComponent(scope)}&nonce=${Date.now()}`;
+
+    window.location.href = authUrl;
+  }
+
+  procesarGoogleCredential(credential: string): void {
+    this.cargando.set(true);
+    this.error.set('');
+
+    this.auth.loginConGoogle(credential).subscribe({
+      next: (response) => {
+        this.cargando.set(false);
+        const rol = String(response.usuario.rol || '').toUpperCase();
+        if (['ADMIN', 'ADMINISTRADOR'].includes(rol)) {
+          this.router.navigateByUrl('/admin');
+        } else {
+          this.router.navigateByUrl('/usuario');
+        }
+      },
+      error: (err) => {
+        this.cargando.set(false);
+        this.error.set(err?.error?.message || 'No se pudo iniciar sesión con Google.');
+      },
+    });
+  }
 
   toggleVerPassword(): void {
     this.verPassword.update((val) => !val);

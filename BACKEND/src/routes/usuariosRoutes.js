@@ -11,6 +11,15 @@ const {
     validarPasswordUsuario,
 } = require('../validators/usuariosValidators');
 
+// Rutas de autogestión de perfil (accesible por cualquier usuario autenticado)
+router.get('/me/perfil', verificarToken, asyncHandler(usuariosController.obtenerMiPerfil));
+router.put('/me/perfil', verificarToken, asyncHandler(usuariosController.actualizarMiPerfil));
+router.put('/me/password', verificarToken, asyncHandler(usuariosController.cambiarMiPassword));
+router.post('/me/vincular-google', verificarToken, asyncHandler(usuariosController.vincularGoogleMiPerfil));
+router.delete('/me/vincular-google', verificarToken, asyncHandler(usuariosController.desvincularGoogleMiPerfil));
+router.post('/me/avatar', verificarToken, asyncHandler(usuariosController.subirAvatarCloudinary));
+router.delete('/me/avatar', verificarToken, asyncHandler(usuariosController.eliminarAvatar));
+
 router.get('/', verificarToken, verificarAdmin, asyncHandler(usuariosController.listarUsuarios));
 router.get('/buscar', verificarToken, verificarAdmin, asyncHandler(usuariosController.buscarUsuariosPorCorreo));
 router.get('/:id/cuentas', verificarToken, verificarAdmin, validarIdUsuario, validarCampos, asyncHandler(usuariosController.listarCuentasUsuario));

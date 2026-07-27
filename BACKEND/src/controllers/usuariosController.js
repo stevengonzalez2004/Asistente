@@ -2,8 +2,19 @@ const bcrypt = require('bcryptjs');
 const usuariosModel = require('../models/usuariosModel');
 const movimientosModel = require('../models/movimientosModel');
 const logger = require('../utils/logger');
+const db = require('../config/db');
 const { mapUsuario, mapUsuarios } = require('../dtos/usuarioDto');
-const { registrarAuditoria } = require('../utils/auditoria');
+function formatUtcIso(val) {
+    if (!val) return null;
+    if (val instanceof Date) {
+        return val.toISOString();
+    }
+    const str = String(val).trim();
+    if (!str.endsWith('Z') && !str.includes('+')) {
+        return new Date(str.replace(' ', 'T') + 'Z').toISOString();
+    }
+    return new Date(str).toISOString();
+}
 
 class UsuariosController {
     /**
@@ -102,8 +113,7 @@ class UsuariosController {
     }
 
     /**
-     * Lista el historial de movimientos de un usuario (vista administrativa). Sin
-     * `page`/`limit`, mantiene el comportamiento actual (ultimos 100, sin meta).
+     * Lista el historial de movimientos de un usuario (vista administrativa).
      * @route GET /api/usuarios/:id/movimientos
      */
     async listarMovimientosUsuario(req, res, next) {
@@ -308,6 +318,231 @@ class UsuariosController {
             });
         } catch (error) {
             logger.error('Error al obtener estadisticas de usuario:', error);
+            next(error);
+        }
+    }
+
+    /**
+     * Obtiene el perfil propio del usuario autenticado.
+     * @route GET /api/usuarios/me/perfil
+     */
+    async obtenerMiPerfil(req, res, next) {
+        try {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            const idUsuario = req.usuario.id;
+            const resUser = await usuariosModel.ObtenerUsuarioPorId(idUsuario);
+            if (resUser.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+            const u = resUser.rows[0];
+            res.status(200).json({
+                id: u.id,
+                nombre: u.nombre,
+                correo: u.correo,
+                rol: u.rol,
+                tieneGoogle: !!u.google_id,
+                tienePassword: !!(u.password_hash || u.password),
+                createdAt: u.created_at || null,
+                fotoUrl: u.foto_url || null,
+                ultimoLogin: u.ultimo_login || null
+            });
+        } catch (error) {
+            logger.error('Error al obtener mi perfil:', error);
+            next(error);
+        }
+    }
+
+    /**
+     * Actualiza datos basicos del perfil propio (nombre).
+     * @route PUT /api/usuarios/me/perfil
+     */
+    async actualizarMiPerfil(req, res, next) {
+        try {
+            const idUsuario = req.usuario.id;
+            const { nombre } = req.body;
+
+            if (!nombre || nombre.trim().length < 2) {
+                return res.status(400).json({ message: 'El nombre debe tener al menos 2 caracteres.' });
+            }
+
+            const resultado = await db.query('UPDATE usuarios SET nombre = $1 WHERE id = $2 RETURNING *', [nombre.trim(), idUsuario]);
+            const u = resultado.rows[0];
+
+            res.status(200).json({
+                id: u.id,
+                nombre: u.nombre,
+                correo: u.correo,
+                rol: u.rol,
+                tieneGoogle: !!u.google_id,
+                tienePassword: !!(u.password_hash || u.password),
+                createdAt: u.created_at || null,
+                fotoUrl: u.foto_url || null,
+                ultimoLogin: u.ultimo_login || null
+            });
+        } catch (error) {
+            logger.error('Error al actualizar mi perfil:', error);
+            next(error);
+        }
+    }
+
+    /**
+     * Cambia la contraseña del perfil propio.
+     * @route PUT /api/usuarios/me/password
+     */
+    async cambiarMiPassword(req, res, next) {
+        try {
+            const idUsuario = req.usuario.id;
+            const { passwordActual, nuevaPassword } = req.body;
+
+            if (!nuevaPassword || nuevaPassword.length < 6) {
+                return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+            }
+
+            const resUser = await usuariosModel.ObtenerUsuarioPorId(idUsuario);
+            const u = resUser.rows[0];
+
+            if (u.password_hash) {
+                if (!passwordActual) {
+                    return res.status(400).json({ message: 'Debes ingresar tu contraseña actual.' });
+                }
+                const valida = await bcrypt.compare(passwordActual, u.password_hash);
+                if (!valida) {
+                    return res.status(400).json({ message: 'La contraseña actual es incorrecta.' });
+                }
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hash = await bcrypt.hash(nuevaPassword, salt);
+
+            await db.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [hash, idUsuario]);
+            res.status(200).json({ success: true, message: 'Contraseña actualizada correctamente' });
+        } catch (error) {
+            logger.error('Error al cambiar contraseña:', error);
+            next(error);
+        }
+    }
+
+    /**
+     * Vincula el Google ID token a la cuenta autenticada y guarda la foto por defecto si el usuario no tiene ninguna.
+     * @route POST /api/usuarios/me/vincular-google
+     */
+    async vincularGoogleMiPerfil(req, res, next) {
+        try {
+            const idUsuario = req.usuario.id;
+            const { credential, token } = req.body;
+            const googleToken = credential || token;
+
+            if (!googleToken) {
+                return res.status(400).json({ message: 'El token de Google es requerido.' });
+            }
+
+            let googleId, pictureUrl;
+            const { OAuth2Client } = require('google-auth-library');
+            const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+            try {
+                const ticket = await client.verifyIdToken({
+                    idToken: googleToken,
+                    audience: process.env.GOOGLE_CLIENT_ID,
+                });
+                const payload = ticket.getPayload();
+                googleId = payload.sub;
+                pictureUrl = payload.picture || null;
+            } catch (err) {
+                return res.status(400).json({ message: 'Token de Google inválido.' });
+            }
+
+            // Verificar si el google_id ya esta en uso por otro usuario
+            const existe = await usuariosModel.BuscarPorGoogleId(googleId);
+            if (existe.rows.length > 0 && existe.rows[0].id !== idUsuario) {
+                return res.status(400).json({ message: 'Esta cuenta de Google ya está vinculada a otro usuario.' });
+            }
+
+            await db.query(`
+                UPDATE usuarios 
+                SET google_id = $1, 
+                    foto_url = COALESCE(NULLIF(foto_url, ''), $2) 
+                WHERE id = $3
+            `, [googleId, pictureUrl, idUsuario]);
+
+            res.status(200).json({ success: true, message: 'Cuenta de Google vinculada con éxito.' });
+        } catch (error) {
+            logger.error('Error al vincular Google:', error);
+            next(error);
+        }
+    }
+
+    /**
+     * Desvincula el Google ID de la cuenta autenticada.
+     * @route DELETE /api/usuarios/me/vincular-google
+     */
+    async desvincularGoogleMiPerfil(req, res, next) {
+        try {
+            const idUsuario = req.usuario.id;
+            const resUser = await usuariosModel.ObtenerUsuarioPorId(idUsuario);
+            const u = resUser.rows[0];
+
+            if (!u.password_hash) {
+                return res.status(400).json({ message: 'No puedes desvincular Google si no tienes una contraseña establecida para iniciar sesión.' });
+            }
+
+            await db.query('UPDATE usuarios SET google_id = NULL WHERE id = $1', [idUsuario]);
+            res.status(200).json({ success: true, message: 'Cuenta de Google desvinculada.' });
+        } catch (error) {
+            logger.error('Error al desvincular Google:', error);
+            next(error);
+        }
+    }
+
+    /**
+     * Sube o actualiza la foto de perfil en Cloudinary y la guarda en PostgreSQL.
+     * @route POST /api/usuarios/me/avatar
+     */
+    async subirAvatarCloudinary(req, res, next) {
+        try {
+            const idUsuario = req.usuario.id;
+            const { imagen } = req.body;
+
+            if (!imagen) {
+                return res.status(400).json({ message: 'Debes proporcionar la imagen para subir.' });
+            }
+
+            const cloudinary = require('../config/cloudinary');
+            const uploadRes = await cloudinary.uploader.upload(imagen, {
+                folder: 'fotos_perfil_af',
+                public_id: `user_${idUsuario}_${Date.now()}`,
+                overwrite: true,
+                transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }]
+            });
+
+            const fotoUrl = uploadRes.secure_url;
+            await db.query('UPDATE usuarios SET foto_url = $1 WHERE id = $2', [fotoUrl, idUsuario]);
+
+            res.status(200).json({
+                success: true,
+                message: 'Foto de perfil actualizada correctamente en Cloudinary.',
+                fotoUrl
+            });
+        } catch (error) {
+            logger.error('Error al subir avatar a Cloudinary:', error);
+            next(error);
+        }
+    }
+
+    /**
+     * Elimina la foto de perfil en PostgreSQL (resetea foto_url a NULL).
+     * @route DELETE /api/usuarios/me/avatar
+     */
+    async eliminarAvatar(req, res, next) {
+        try {
+            const idUsuario = req.usuario.id;
+            await db.query('UPDATE usuarios SET foto_url = NULL WHERE id = $1', [idUsuario]);
+
+            res.status(200).json({
+                success: true,
+                message: 'Foto de perfil eliminada correctamente.',
+                fotoUrl: null
+            });
+        } catch (error) {
+            logger.error('Error al eliminar avatar:', error);
             next(error);
         }
     }

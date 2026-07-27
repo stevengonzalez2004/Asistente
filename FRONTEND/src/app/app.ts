@@ -143,6 +143,11 @@ export class App implements OnInit {
     return this.isAdmin ? 'Administrador' : 'Usuario';
   }
 
+  protected get userFotoUrl(): string | null {
+    const u = this.authService.usuario();
+    return u?.foto_url || null;
+  }
+
   protected get avatarInitials(): string {
     const usuario = this.authService.usuario();
     const nombre = usuario?.nombre?.trim();
@@ -189,5 +194,9 @@ export class App implements OnInit {
 
   protected logout(): void {
     this.authService.logout();
+  }
+
+  protected irAMiPerfil(): void {
+    this.router.navigateByUrl('/perfil');
   }
 }

@@ -12,6 +12,29 @@ module.exports = {
     `,
 
     /**
+     * Busca un usuario activo por su google_id.
+     */
+    BUSCAR_POR_GOOGLE_ID: `
+        SELECT * FROM usuarios WHERE google_id = $1 AND deleted_at IS NULL;
+    `,
+
+    /**
+     * Vincula el google_id a un usuario existente.
+     */
+    VINCULAR_GOOGLE_ID: `
+        UPDATE usuarios SET google_id = $1 WHERE id = $2 RETURNING *;
+    `,
+
+    /**
+     * Registra un usuario nuevo mediante Google Sign-In.
+     */
+    REGISTRO_GOOGLE: `
+        INSERT INTO usuarios (nombre, correo, google_id, rol)
+        VALUES ($1, $2, $3, 'USUARIO')
+        RETURNING id, nombre, correo, rol, created_at;
+    `,
+
+    /**
      * Invoca la función almacenada fx_registro_completo.
      */
     REGISTRO_COMPLETO: `
@@ -78,7 +101,10 @@ module.exports = {
      * Obtiene un usuario activo por su ID.
      */
     OBTENER_USUARIO_POR_ID: `
-        SELECT id, nombre, correo, rol, telegram_id, deleted_at 
+        SELECT id, nombre, correo, rol, google_id, foto_url, password AS password_hash, 
+               TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at, 
+               TO_CHAR(ultimo_login, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS ultimo_login, 
+               telegram_id, deleted_at 
         FROM usuarios 
         WHERE id = $1 AND deleted_at IS NULL;
     `,

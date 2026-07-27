@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, throwError } from 'rxjs';
 import { LoginResponse, RefreshResponse, Usuario } from './models';
 
 const API_URL = 'http://localhost:3000/api';
@@ -29,9 +29,23 @@ export class AuthService {
     );
   }
 
+  loginConGoogle(credential: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${API_URL}/auth/google`, { credential }).pipe(
+      tap((response) => {
+        localStorage.setItem(TOKEN_KEY, response.token);
+        localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(response.usuario));
+        this.usuario.set(response.usuario);
+      }),
+    );
+  }
+
   /** Renueva el access token usando el refresh token almacenado. Usado por el interceptor ante un 401/403. */
   refreshToken(): Observable<RefreshResponse> {
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      return throwError(() => new Error('No hay refresh token disponible.'));
+    }
     return this.http.post<RefreshResponse>(`${API_URL}/auth/refresh`, { refreshToken }).pipe(
       tap((response) => localStorage.setItem(TOKEN_KEY, response.token)),
     );
@@ -61,6 +75,14 @@ export class AuthService {
       correo,
       nuevaContrasena,
     });
+  }
+
+  actualizarUsuarioLocal(datos: Partial<Usuario>): void {
+    const actual = this.usuario();
+    if (!actual) return;
+    const actualizado = { ...actual, ...datos };
+    localStorage.setItem(USER_KEY, JSON.stringify(actualizado));
+    this.usuario.set(actualizado);
   }
 
   logout(): void {

@@ -25,6 +25,7 @@ import {
   RespaldoPayload,
   Usuario,
   UsuarioListado,
+  UsuarioPerfil,
 } from './models';
 
 const API_URL = 'http://localhost:3000/api';
@@ -41,6 +42,41 @@ export class ApiService {
       }
     });
     return httpParams;
+  }
+
+  // ==========================================
+  // AUTOGESTIÓN DE PERFIL PROPIO
+  // ==========================================
+
+  obtenerMiPerfil(): Observable<UsuarioPerfil> {
+    return this.http.get<UsuarioPerfil>(`${API_URL}/usuarios/me/perfil?t=${Date.now()}`);
+  }
+
+  actualizarMiPerfil(nombre: string): Observable<UsuarioPerfil> {
+    return this.http.put<UsuarioPerfil>(`${API_URL}/usuarios/me/perfil`, { nombre });
+  }
+
+  cambiarMiPassword(passwordActual: string, nuevaPassword: string): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${API_URL}/usuarios/me/password`, {
+      passwordActual,
+      nuevaPassword,
+    });
+  }
+
+  vincularGoogleMiPerfil(credential: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${API_URL}/usuarios/me/vincular-google`, { credential });
+  }
+
+  desvincularGoogleMiPerfil(): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${API_URL}/usuarios/me/vincular-google`);
+  }
+
+  subirAvatarCloudinary(imagen: string): Observable<{ success: boolean; message: string; fotoUrl: string }> {
+    return this.http.post<{ success: boolean; message: string; fotoUrl: string }>(`${API_URL}/usuarios/me/avatar`, { imagen });
+  }
+
+  eliminarAvatarCloudinary(): Observable<{ success: boolean; message: string; fotoUrl: null }> {
+    return this.http.delete<{ success: boolean; message: string; fotoUrl: null }>(`${API_URL}/usuarios/me/avatar`);
   }
 
   listarUsuarios(params: ListarUsuariosParams = {}): Observable<PaginatedResponse<UsuarioListado>> {

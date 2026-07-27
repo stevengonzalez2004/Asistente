@@ -18,6 +18,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       const esRutaAuth = req.url.includes('/auth/login') || req.url.includes('/auth/refresh');
 
       if (!esRutaAuth && (error.status === 401 || error.status === 403)) {
+        const refreshToken = localStorage.getItem('asistente_financiero_refresh_token');
+        if (!refreshToken) {
+          authService.logout();
+          return throwError(() => error);
+        }
+
         return tokenRefresh.refreshAccessToken().pipe(
           switchMap((nuevoToken) =>
             next(req.clone({ setHeaders: { Authorization: `Bearer ${nuevoToken}` } })),

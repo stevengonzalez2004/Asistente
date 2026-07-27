@@ -30,6 +30,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/user-dashboard/user-dashboard').then((m) => m.UserDashboard),
     canActivate: [userGuard],
   },
+  {
+    path: 'perfil',
+    loadComponent: () => import('./pages/perfil/perfil').then((m) => m.Perfil),
+    canActivate: [authGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: '**', redirectTo: 'login' },
 ];

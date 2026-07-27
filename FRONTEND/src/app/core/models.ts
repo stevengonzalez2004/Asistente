@@ -9,6 +9,19 @@ export interface Usuario {
   created_at?: string;
   ultimo_login?: string | null;
   deleted_at?: string | null;
+  foto_url?: string | null;
+}
+
+export interface UsuarioPerfil {
+  id: number;
+  nombre: string;
+  correo: string;
+  rol: RolUsuario;
+  tieneGoogle: boolean;
+  tienePassword: boolean;
+  createdAt?: string;
+  fotoUrl?: string | null;
+  ultimoLogin?: string | null;
 }
 
 export interface UsuarioListado extends Usuario {
