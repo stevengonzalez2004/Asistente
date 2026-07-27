@@ -31,6 +31,15 @@
             >
                 <mat-icon>{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
             </button>
+            <button
+                type="button"
+                mat-icon-button
+                class="mobile-close-toggle"
+                (click)="closeMobileSidebar()"
+                matTooltip="Cerrar menú"
+            >
+                <mat-icon>close</mat-icon>
+            </button>
         </div>
 
         <div
@@ -149,10 +158,11 @@
                 type="button"
                 mat-icon-button
                 class="mobile-menu-toggle"
+                [class.is-open]="mobileSidebarOpen()"
                 (click)="toggleMobileSidebar()"
-                matTooltip="Menú"
+                [matTooltip]="mobileSidebarOpen() ? 'Cerrar menú' : 'Abrir menú'"
             >
-                <mat-icon>menu</mat-icon>
+                <mat-icon>{{ mobileSidebarOpen() ? 'close' : 'menu' }}</mat-icon>
             </button>
             <div class="navbar-brand">{{ navbarBrand() }}</div>
             <div class="navbar-spacer"></div>

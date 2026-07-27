@@ -476,7 +476,8 @@
          }
      }
      
-     .mobile-menu-toggle {
+     .mobile-menu-toggle,
+     .mobile-close-toggle {
          display: none;
      }
 
@@ -486,7 +487,43 @@
 
      @media (max-width: 768px) {
          .mobile-menu-toggle {
-             display: inline-flex;
+             display: inline-flex !important;
+             width: 38px !important;
+             height: 38px !important;
+             min-width: 38px !important;
+             min-height: 38px !important;
+             padding: 0 !important;
+             margin: 0 !important;
+             border-radius: 10px !important;
+             background: var(--app-overlay-soft, rgba(255, 255, 255, 0.08)) !important;
+             border: 1px solid var(--app-border-color-soft, rgba(148, 163, 184, 0.2)) !important;
+             color: var(--app-text-primary, #f8fafc) !important;
+             align-items: center !important;
+             justify-content: center !important;
+             z-index: 1005;
+             transition: all 0.2s ease;
+         }
+
+         .mobile-menu-toggle.is-open {
+             background: rgba(239, 68, 68, 0.2) !important;
+             border-color: rgba(239, 68, 68, 0.4) !important;
+             color: #f87171 !important;
+         }
+
+         .mobile-close-toggle {
+             display: inline-flex !important;
+             width: 32px !important;
+             height: 32px !important;
+             min-width: 32px !important;
+             min-height: 32px !important;
+             padding: 0 !important;
+             margin: 0 0 0 auto !important;
+             border-radius: 50% !important;
+             background: rgba(239, 68, 68, 0.15) !important;
+             border: 1px solid rgba(239, 68, 68, 0.3) !important;
+             color: #f87171 !important;
+             align-items: center !important;
+             justify-content: center !important;
          }
 
          .global-sidebar {
@@ -525,6 +562,7 @@
 
          .global-navbar {
              padding: 0 12px;
+             gap: 8px;
          }
 
          .main-content {
