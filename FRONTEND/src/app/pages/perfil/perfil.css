@@ -508,44 +508,93 @@ input:focus {
 }
 
 @media (max-width: 640px) {
-  .perfil-container {
-    padding: 8px 4px;
+  .perfil-page {
+    padding: 12px 8px;
+    gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .perfil-hero-card {
     flex-direction: column;
     text-align: center;
-    padding: 20px 16px;
-    gap: 16px;
+    padding: 20px 14px;
+    gap: 14px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  .hero-avatar-wrapper {
+  .avatar-glow-ring {
     margin: 0 auto;
   }
 
   .hero-badges {
     justify-content: center;
+    gap: 6px;
   }
 
   .perfil-tabs-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
     padding-bottom: 6px;
-    gap: 8px;
+    gap: 6px;
     justify-content: flex-start;
+    box-sizing: border-box;
   }
 
   .tab-btn {
     flex: 0 0 auto;
-    padding: 10px 16px;
-    font-size: 13px;
+    padding: 10px 14px;
+    font-size: 12px;
     min-height: 44px;
+    gap: 6px;
   }
 
   .section-card {
-    padding: 18px 14px;
+    padding: 16px 12px;
     border-radius: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .avatar-upload-box {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 16px 12px;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 14px;
+  }
+
+  .avatar-preview-wrap {
+    margin: 0 auto;
+  }
+
+  .avatar-upload-info {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+  }
+
+  .avatar-button-row {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .btn-upload-avatar,
+  .btn-cancel-avatar,
+  .btn-delete-avatar {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
   }
 
   .form-actions,
@@ -562,5 +611,11 @@ input:focus {
     width: 100%;
     min-height: 44px;
     justify-content: center;
+  }
+
+  .last-login-audit-box {
+    flex-direction: column;
+    text-align: center;
+    padding: 12px;
   }
 }
