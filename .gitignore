@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Cloudflare Wrangler cache
+.wrangler/
+
+# Builds
+dist/
+.angular/

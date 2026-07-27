@@ -751,22 +751,42 @@ th {
 
 @media (max-width: 640px) {
     .admin-shell {
-        padding: 14px;
+        padding: 8px 4px;
     }
     .topbar,
     .detail-header,
-    .detail-actions,
-    .section-nav {
+    .detail-actions {
         align-items: flex-start;
         flex-direction: column;
+        gap: 10px;
+    }
+    .section-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        padding-bottom: 6px;
+        width: 100%;
+        gap: 8px;
+    }
+    .section-nav button {
+        flex: 0 0 auto;
+        width: auto;
+        min-height: 44px;
+        padding: 10px 16px;
     }
     .detail-actions,
-    .section-nav,
-    .section-nav button {
+    .detail-actions button {
         width: 100%;
+        min-height: 44px;
     }
     .modal {
         grid-template-columns: 1fr;
+        padding: 16px;
+    }
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
 

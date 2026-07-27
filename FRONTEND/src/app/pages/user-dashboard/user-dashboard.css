@@ -325,7 +325,9 @@ button:disabled {
 }
 
 @media (max-width: 900px) {
-    .metrics,
+    .metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
     .accounts-grid,
     .movement-form {
         grid-template-columns: 1fr;
@@ -334,16 +336,45 @@ button:disabled {
 
 @media (max-width: 640px) {
     .user-shell {
-        padding: 14px;
+        padding: 8px 4px;
     }
     .topbar,
     .section-title {
         align-items: flex-start;
         flex-direction: column;
+        gap: 10px;
         color: var(--app-text-primary, #0f172a);
     }
     .topbar button,
     .section-title button {
         width: 100%;
+        min-height: 44px;
+    }
+    .navbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 6px;
+        scroll-snap-type: x mandatory;
+    }
+    .navbar button {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        padding: 10px 16px;
+        min-height: 44px;
+    }
+    .metrics {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .panel-section {
+        padding: 14px;
+    }
+    .movement-form .form-group {
+        width: 100%;
+    }
+    .movement-form button {
+        width: 100%;
+        min-height: 44px;
     }
 }
