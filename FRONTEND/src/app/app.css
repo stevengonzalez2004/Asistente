@@ -486,6 +486,18 @@
      }
 
      @media (max-width: 768px) {
+         /* Ocultar etiquetas de texto de forma estricta en movil para evitar desbordamientos */
+         .global-sidebar .brand-text,
+         .global-sidebar .label,
+         .global-sidebar .user-info-text,
+         .global-sidebar .sidebar-group-label,
+         .global-sidebar .soon-badge {
+             display: none !important;
+             width: 0 !important;
+             height: 0 !important;
+             overflow: hidden !important;
+         }
+
          .mobile-menu-toggle {
              display: inline-flex !important;
              width: 38px !important;
@@ -517,8 +529,12 @@
          .global-sidebar,
          .global-sidebar.collapsed {
              width: 76px !important;
+             overflow: hidden !important;
              transform: translateX(-100%) !important;
-             transition: transform var(--motion-base, 0.25s) cubic-bezier(0.4, 0, 0.2, 1);
+             opacity: 0 !important;
+             visibility: hidden !important;
+             pointer-events: none !important;
+             transition: transform var(--motion-base, 0.25s) cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, visibility 0.2s ease;
              box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
              z-index: 1000;
          }
@@ -531,6 +547,9 @@
          .global-sidebar.mobile-open,
          .global-sidebar.collapsed.mobile-open {
              transform: translateX(0) !important;
+             opacity: 1 !important;
+             visibility: visible !important;
+             pointer-events: auto !important;
              width: 76px !important;
          }
 

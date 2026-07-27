@@ -592,9 +592,15 @@ input:focus {
   .btn-upload-avatar,
   .btn-cancel-avatar,
   .btn-delete-avatar {
-    width: 100%;
-    justify-content: center;
-    min-height: 44px;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px 14px !important;
+    font-size: 0.88rem !important;
+    white-space: normal !important;
+    text-align: center !important;
+    justify-content: center !important;
+    min-height: 46px !important;
   }
 
   .form-actions,
