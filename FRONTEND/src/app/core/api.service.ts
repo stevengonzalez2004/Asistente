@@ -28,7 +28,9 @@ import {
   UsuarioPerfil,
 } from './models';
 
-const API_URL = 'http://localhost:3000/api';
+import { environment } from '../../environments/environment';
+
+const API_URL = environment.apiBaseUrl;
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {

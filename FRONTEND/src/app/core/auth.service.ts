@@ -4,7 +4,9 @@ import { Router } from '@angular/router';
 import { Observable, tap, throwError } from 'rxjs';
 import { LoginResponse, RefreshResponse, Usuario } from './models';
 
-const API_URL = 'http://localhost:3000/api';
+import { environment } from '../../environments/environment';
+
+const API_URL = environment.apiBaseUrl;
 const TOKEN_KEY = 'asistente_financiero_token';
 const REFRESH_TOKEN_KEY = 'asistente_financiero_refresh_token';
 const USER_KEY = 'asistente_financiero_usuario';
