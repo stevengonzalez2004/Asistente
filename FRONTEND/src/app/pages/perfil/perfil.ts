@@ -8,7 +8,7 @@ import { AuthService } from '../../core/auth.service';
 import { UsuarioPerfil } from '../../core/models';
 import { SnackbarService } from '../../core/snackbar.service';
 
-type PerfilTab = 'datos' | 'seguridad' | 'google';
+type PerfilTab = 'datos' | 'seguridad' | 'google' | 'telegram';
 
 @Component({
   selector: 'app-perfil',
@@ -191,6 +191,9 @@ export class Perfil implements OnInit {
 
   cambiarTab(tab: PerfilTab): void {
     this.tabActiva.set(tab);
+    if (tab === 'telegram') {
+      this.cargarPerfil();
+    }
     if (tab === 'google') {
       setTimeout(() => this.inicializarGoogleVincularButton(), 200);
     }

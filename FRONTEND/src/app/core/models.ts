@@ -19,6 +19,8 @@ export interface UsuarioPerfil {
   rol: RolUsuario;
   tieneGoogle: boolean;
   tienePassword: boolean;
+  telegram_id?: number | string | null;
+  telegramId?: number | string | null;
   createdAt?: string;
   fotoUrl?: string | null;
   ultimoLogin?: string | null;

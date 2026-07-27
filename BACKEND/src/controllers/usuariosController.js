@@ -341,6 +341,8 @@ class UsuariosController {
                 rol: u.rol,
                 tieneGoogle: !!u.google_id,
                 tienePassword: !!(u.password_hash || u.password),
+                telegram_id: u.telegram_id || null,
+                telegramId: u.telegram_id || null,
                 createdAt: u.created_at || null,
                 fotoUrl: u.foto_url || null,
                 ultimoLogin: u.ultimo_login || null

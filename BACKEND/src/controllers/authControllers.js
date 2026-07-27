@@ -103,7 +103,7 @@ exports.loginConGoogle = async (req, res, next) => {
             message: 'Login con Google exitoso',
             token,
             refreshToken,
-            usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol || 'USUARIO', foto_url: usuario.foto_url || null }
+            usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol || 'USUARIO', foto_url: usuario.foto_url || null, telegram_id: usuario.telegram_id || null, telegramId: usuario.telegram_id || null }
         });
     } catch (error) {
         logger.error('Error en login con Google:', error);
@@ -155,7 +155,7 @@ exports.login = async (req, res, next) => {
             message: 'Login exitoso',
             token,
             refreshToken,
-            usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol, foto_url: usuario.foto_url || null }
+            usuario: { id: usuario.id, correo: usuario.correo, nombre: usuario.nombre, rol: usuario.rol, foto_url: usuario.foto_url || null, telegram_id: usuario.telegram_id || null, telegramId: usuario.telegram_id || null }
         });
     } catch (error) {
         logger.error('Error en login:', error);
