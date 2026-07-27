@@ -23,6 +23,11 @@ export class Login {
   readonly mensaje = signal('');
   readonly modo = signal<LoginModo>('login');
   readonly correoRecuperacion = signal('');
+  readonly verPassword = signal(false);
+
+  toggleVerPassword(): void {
+    this.verPassword.update((val) => !val);
+  }
 
   readonly form = this.fb.nonNullable.group({
     correo: ['', [Validators.required, Validators.email]],

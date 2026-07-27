@@ -16,7 +16,13 @@
 
       <label>
         Contrasena
-        <input type="password" formControlName="password" autocomplete="current-password" placeholder="Minimo 6 caracteres" />
+        <div class="password-wrap">
+          <input [type]="verPassword() ? 'text' : 'password'" formControlName="password" autocomplete="current-password" placeholder="Minimo 6 caracteres" />
+          <button type="button" class="eye-btn" (click)="toggleVerPassword()" [title]="verPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+            <svg *ngIf="!verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg *ngIf="verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          </button>
+        </div>
         <span *ngIf="form.controls.password.touched && form.controls.password.hasError('required')" class="field-error">La contrasena es obligatoria.</span>
         <span *ngIf="form.controls.password.touched && form.controls.password.hasError('minlength')" class="field-error">La contrasena debe tener al menos 6 caracteres.</span>
       </label>
@@ -49,14 +55,26 @@
 
       <label>
         Contrasena
-        <input type="password" formControlName="password" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+        <div class="password-wrap">
+          <input [type]="verPassword() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+          <button type="button" class="eye-btn" (click)="toggleVerPassword()" [title]="verPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+            <svg *ngIf="!verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg *ngIf="verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          </button>
+        </div>
         <span *ngIf="registroForm.controls.password.touched && registroForm.controls.password.hasError('required')" class="field-error">La contrasena es obligatoria.</span>
         <span *ngIf="registroForm.controls.password.touched && registroForm.controls.password.hasError('minlength')" class="field-error">Minimo 6 caracteres.</span>
       </label>
 
       <label>
         Confirmar contrasena
-        <input type="password" formControlName="confirmarPassword" autocomplete="new-password" placeholder="Repite la contrasena" />
+        <div class="password-wrap">
+          <input [type]="verPassword() ? 'text' : 'password'" formControlName="confirmarPassword" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+          <button type="button" class="eye-btn" (click)="toggleVerPassword()" [title]="verPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+            <svg *ngIf="!verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg *ngIf="verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          </button>
+        </div>
         <span *ngIf="registroForm.controls.confirmarPassword.touched && registroForm.controls.confirmarPassword.hasError('required')" class="field-error">Confirma tu contrasena.</span>
         <span *ngIf="registroForm.controls.confirmarPassword.touched && registroForm.controls.password.value !== registroForm.controls.confirmarPassword.value" class="field-error">Las contrasenas no coinciden.</span>
       </label>
@@ -107,14 +125,26 @@
     <form *ngIf="modo() === 'nueva'" [formGroup]="nuevaPasswordForm" (ngSubmit)="cambiarPassword()" class="login-form">
       <label>
         Nueva contrasena
-        <input type="password" formControlName="nuevaContrasena" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+        <div class="password-wrap">
+          <input [type]="verPassword() ? 'text' : 'password'" formControlName="nuevaContrasena" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+          <button type="button" class="eye-btn" (click)="toggleVerPassword()" [title]="verPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+            <svg *ngIf="!verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg *ngIf="verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          </button>
+        </div>
         <span *ngIf="nuevaPasswordForm.controls.nuevaContrasena.touched && nuevaPasswordForm.controls.nuevaContrasena.hasError('required')" class="field-error">La nueva contrasena es obligatoria.</span>
         <span *ngIf="nuevaPasswordForm.controls.nuevaContrasena.touched && nuevaPasswordForm.controls.nuevaContrasena.hasError('minlength')" class="field-error">Minimo 6 caracteres.</span>
       </label>
 
       <label>
         Confirmar contrasena
-        <input type="password" formControlName="confirmarContrasena" autocomplete="new-password" placeholder="Repite la contrasena" />
+        <div class="password-wrap">
+          <input [type]="verPassword() ? 'text' : 'password'" formControlName="confirmarContrasena" autocomplete="new-password" placeholder="Minimo 6 caracteres" />
+          <button type="button" class="eye-btn" (click)="toggleVerPassword()" [title]="verPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+            <svg *ngIf="!verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg *ngIf="verPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+          </button>
+        </div>
         <span *ngIf="nuevaPasswordForm.controls.confirmarContrasena.touched && nuevaPasswordForm.controls.confirmarContrasena.hasError('required')" class="field-error">Confirma la contrasena.</span>
         <span *ngIf="nuevaPasswordForm.controls.confirmarContrasena.touched && nuevaPasswordForm.controls.nuevaContrasena.value !== nuevaPasswordForm.controls.confirmarContrasena.value" class="field-error">Las contrasenas no coinciden.</span>
       </label>

@@ -151,10 +151,12 @@
                 type="button"
                 mat-icon-button
                 class="theme-toggle"
+                [class.is-dark]="tema() === 'oscuro'"
+                [class.is-light]="tema() === 'claro'"
                 (click)="toggleTema()"
                 [matTooltip]="tema() === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro'"
             >
-                <mat-icon>{{ tema() === 'claro' ? 'dark_mode' : 'light_mode' }}</mat-icon>
+                <mat-icon class="theme-icon">{{ tema() === 'claro' ? 'dark_mode' : 'light_mode' }}</mat-icon>
             </button>
             <div class="navbar-user">
                 <span class="user-name">{{ userName }}</span>
