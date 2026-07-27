@@ -412,22 +412,37 @@ input:focus {
   margin-top: 8px;
 }
 
-.submit-btn {
+.submit-btn,
+.btn-primary {
   min-height: 44px;
   padding: 0 24px;
   border: none;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--app-brand-gradient-start, #2563eb), var(--app-brand-gradient-end, #0f766e));
   color: white;
+  font-size: 0.92rem;
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
-  transition: filter 0.2s ease, transform 0.15s ease;
+  transition: filter 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.submit-btn:hover:not(:disabled) {
+.submit-btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateY(-1px);
+}
+
+.submit-btn:disabled,
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+  box-shadow: none;
 }
 
 /* GOOGLE BOX */

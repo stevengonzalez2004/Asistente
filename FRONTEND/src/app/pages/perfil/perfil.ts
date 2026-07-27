@@ -183,6 +183,7 @@ export class Perfil implements OnInit {
       },
       error: (err: any) => {
         this.cargando.set(false);
+        if (err?.status === 401 || err?.status === 403) return;
         this.snackbar.error(err?.error?.message || 'No se pudo cargar la información del perfil.');
         this.cdr.markForCheck();
       },
