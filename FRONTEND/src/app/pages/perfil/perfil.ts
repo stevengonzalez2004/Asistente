@@ -134,13 +134,13 @@ export class Perfil implements OnInit {
   }
 
   readonly perfilForm = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.minLength(2)]],
+    nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
   });
 
   readonly passwordForm = this.fb.nonNullable.group({
     passwordActual: [''],
-    nuevaPassword: ['', [Validators.required, Validators.minLength(6)]],
-    confirmarPassword: ['', [Validators.required, Validators.minLength(6)]],
+    nuevaPassword: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
+    confirmarPassword: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
   });
 
   ngOnInit(): void {
