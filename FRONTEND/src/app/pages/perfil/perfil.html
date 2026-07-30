@@ -168,7 +168,7 @@
           <div class="form-group">
             <label for="passConfirm">Confirmar Nueva Contraseña</label>
             <input id="passConfirm" type="password" formControlName="confirmarPassword" placeholder="••••••••" />
-            <span *ngIf="passwordForm.get('confirmarPassword')?.touched && passwordForm.get('confirmarPassword')?.value !== passwordForm.get('nuevaPassword')?.value" class="field-error">
+            <span *ngIf="passwordForm.hasError('passwordsNoCoinciden') && (passwordForm.get('confirmarPassword')?.touched || passwordForm.get('nuevaPassword')?.touched)" class="field-error">
               Las contraseñas no coinciden.
             </span>
           </div>

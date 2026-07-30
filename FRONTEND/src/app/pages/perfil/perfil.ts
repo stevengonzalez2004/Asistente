@@ -1,6 +1,6 @@
 import { CommonModule, DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, NgZone, OnInit, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../core/api.service';
@@ -9,6 +9,12 @@ import { UsuarioPerfil } from '../../core/models';
 import { SnackbarService } from '../../core/snackbar.service';
 
 type PerfilTab = 'datos' | 'seguridad' | 'google' | 'telegram';
+
+const coincidenPasswordsValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const nueva = control.get('nuevaPassword')?.value;
+  const confirmar = control.get('confirmarPassword')?.value;
+  return nueva && confirmar && nueva !== confirmar ? { passwordsNoCoinciden: true } : null;
+};
 
 @Component({
   selector: 'app-perfil',
@@ -137,11 +143,14 @@ export class Perfil implements OnInit {
     nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
   });
 
-  readonly passwordForm = this.fb.nonNullable.group({
-    passwordActual: [''],
-    nuevaPassword: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
-    confirmarPassword: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
-  });
+  readonly passwordForm = this.fb.nonNullable.group(
+    {
+      passwordActual: [''],
+      nuevaPassword: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
+      confirmarPassword: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
+    },
+    { validators: [coincidenPasswordsValidator] }
+  );
 
   ngOnInit(): void {
     this.cargarPerfil();
