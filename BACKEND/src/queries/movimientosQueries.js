@@ -36,7 +36,7 @@ module.exports = {
     OBTENER_CATEGORIA_POR_NOMBRE: `
         SELECT id, nombre
         FROM categorias
-        WHERE LOWER(nombre) = LOWER($1)
+        WHERE TRIM(LOWER(nombre)) = TRIM(LOWER($1))
           AND (usuario_id = $2 OR usuario_id IS NULL)
         ORDER BY usuario_id NULLS FIRST
         LIMIT 1;
@@ -57,7 +57,7 @@ module.exports = {
     OBTENER_CUENTA_POR_NOMBRE: `
         SELECT id, nombre, saldo_actual
         FROM cuentas
-        WHERE LOWER(nombre) = LOWER($1)
+        WHERE TRIM(LOWER(nombre)) = TRIM(LOWER($1))
           AND usuario_id = $2
         LIMIT 1;
     `,
