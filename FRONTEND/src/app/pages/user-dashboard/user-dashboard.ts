@@ -7,7 +7,7 @@ import { AuthService } from '../../core/auth.service';
 import { CategoriaUsada, Cuenta, Movimiento, TendenciaMensual } from '../../core/models';
 import { SnackbarService } from '../../core/snackbar.service';
 import { ChartCard } from '../../shared/chart-card/chart-card';
-import { buildIngresosVsGastosOptions } from '../../shared/chart-card/chart-builders';
+import { buildCategoriasOptions, buildIngresosVsGastosOptions } from '../../shared/chart-card/chart-builders';
 import { Notice } from '../../shared/notice/notice';
 
 type UserSection = 'cuentas' | 'movimientos' | 'crear-cuenta' | 'nuevo-movimiento';
@@ -77,8 +77,34 @@ export class UserDashboard implements OnInit {
     }));
   });
 
+  readonly categoriasMasUsadas = computed<CategoriaUsada[]>(() => {
+    const mapa = new Map<string, { cantidad: number; monto_total: number }>();
+
+    this.movimientos().forEach((m) => {
+      if (m.tipo !== 'GASTO' || !m.categoria) return;
+      const cat = m.categoria;
+      if (!mapa.has(cat)) {
+        mapa.set(cat, { cantidad: 0, monto_total: 0 });
+      }
+      const item = mapa.get(cat)!;
+      item.cantidad += 1;
+      item.monto_total += Number(m.monto || 0);
+    });
+
+    const llaves = Array.from(mapa.keys());
+    return llaves.map((cat) => ({
+      categoria: cat,
+      cantidad: mapa.get(cat)!.cantidad,
+      monto_total: mapa.get(cat)!.monto_total,
+    }));
+  });
+
   readonly ingresosVsGastosOptions = computed(() =>
     buildIngresosVsGastosOptions(this.tendenciaMensual())
+  );
+
+  readonly categoriasOptions = computed(() =>
+    buildCategoriasOptions(this.categoriasMasUsadas())
   );
 
   readonly cuentaForm = this.fb.nonNullable.group({

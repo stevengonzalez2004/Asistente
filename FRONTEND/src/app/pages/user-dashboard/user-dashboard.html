@@ -39,12 +39,20 @@
     </article>
   </section>
 
-  @if (tendenciaMensual().length > 0) {
-    <section style="margin-bottom: 24px;">
+  @if (tendenciaMensual().length > 0 || categoriasMasUsadas().length > 0) {
+    <section class="charts-user-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px;">
       <app-chart-card
+        *ngIf="tendenciaMensual().length > 0"
         titulo="Comparativa Mensual (Ingresos vs Gastos)"
         icon="bar_chart"
         [options]="ingresosVsGastosOptions()"
+        [loading]="cargando()"
+      />
+      <app-chart-card
+        *ngIf="categoriasMasUsadas().length > 0"
+        titulo="Gastos por Categoría"
+        icon="pie_chart"
+        [options]="categoriasOptions()"
         [loading]="cargando()"
       />
     </section>
