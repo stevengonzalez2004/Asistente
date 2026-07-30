@@ -1,6 +1,7 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { debounceTime } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Cuenta, Movimiento } from '../../core/models';
@@ -33,9 +34,23 @@ export class UserDashboard implements OnInit {
   readonly guardandoMovimiento = signal(false);
   readonly error = signal('');
 
+  readonly busquedaControl = this.fb.control('');
+  readonly filtroBusqueda = signal('');
+
   readonly totalCuentas = computed(() => this.cuentas().length);
   readonly totalMovimientos = computed(() => this.movimientos().length);
   readonly ultimosMovimientos = computed(() => this.movimientos().slice(0, 6));
+
+  readonly movimientosFiltrados = computed(() => {
+    const q = this.filtroBusqueda().toLowerCase().trim();
+    if (!q) return this.movimientos();
+    return this.movimientos().filter(
+      (m) =>
+        m.categoria?.toLowerCase().includes(q) ||
+        m.descripcion?.toLowerCase().includes(q) ||
+        m.tipo?.toLowerCase().includes(q)
+    );
+  });
 
   readonly cuentaForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
@@ -53,6 +68,9 @@ export class UserDashboard implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatos();
+    this.busquedaControl.valueChanges.pipe(debounceTime(300)).subscribe((val) => {
+      this.filtroBusqueda.set(val || '');
+    });
   }
 
   cargarDatos(): void {
