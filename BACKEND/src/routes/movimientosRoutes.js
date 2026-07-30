@@ -4,13 +4,18 @@ const movimientosController = require('../controllers/movimientosController');
 const { verificarToken } = require('../middlewares/authMiddleware');
 const asyncHandler = require('../utils/asyncHandler');
 const { validarCampos } = require('../middlewares/validadorMiddleware');
-const { validarIdMovimiento, validarEdicionMovimiento } = require('../validators/movimientosValidators');
+const {
+    validarIdMovimiento,
+    validarEdicionMovimiento,
+    validarCreacionMovimiento,
+    validarCreacionCuenta
+} = require('../validators/movimientosValidators');
 
 // POST /api/movimientos - Registrar un nuevo movimiento
-router.post('/', verificarToken, asyncHandler(movimientosController.registrar));
+router.post('/', verificarToken, validarCreacionMovimiento, validarCampos, asyncHandler(movimientosController.registrar));
 
 // POST /api/movimientos/cuentas - Crear una cuenta nueva para el usuario autenticado
-router.post('/cuentas', verificarToken, asyncHandler(movimientosController.crearCuenta));
+router.post('/cuentas', verificarToken, validarCreacionCuenta, validarCampos, asyncHandler(movimientosController.crearCuenta));
 
 // GET /api/movimientos/cuentas - Listar las cuentas de un usuario con saldos
 router.get('/cuentas', verificarToken, asyncHandler(movimientosController.obtenerCuentas));
