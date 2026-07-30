@@ -22,6 +22,9 @@ import { ADMIN_NAV_ITEMS, SidebarNavItem, USER_NAV_ITEMS } from './core/sidebar-
 import { ThemeService } from './core/theme.service';
 import { routeFadeAnimation } from './route-animations';
 
+import { inject } from '@angular/core';
+import { NetworkService } from './core/network.service';
+
 const SIDEBAR_COLLAPSED_KEY = 'asistente_financiero_sidebar_collapsed';
 const NOMBRE_SISTEMA_POR_DEFECTO = 'Asistente';
 const NOMBRE_SISTEMA_SUB_POR_DEFECTO = 'Financiero';
@@ -44,6 +47,7 @@ const NAVBAR_BRAND_POR_DEFECTO = 'Control Financiero';
   animations: [routeFadeAnimation],
 })
 export class App implements OnInit {
+  protected readonly network = inject(NetworkService);
   protected readonly adminNavItems: SidebarNavItem[] = ADMIN_NAV_ITEMS;
   protected readonly userNavItems: SidebarNavItem[] = USER_NAV_ITEMS;
   protected readonly sidebarCollapsed = signal<boolean>(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');

@@ -1,4 +1,11 @@
 <div class="app-container" [class.with-layout]="isLoggedIn">
+    @if (!network.enLinea()) {
+    <div class="offline-banner">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">wifi_off</mat-icon>
+        <span>Modo Sin Conexión — Algunas funciones requieren conexión a Internet.</span>
+    </div>
+    }
+
     @if (navegando()) {
     <mat-progress-bar mode="indeterminate" class="route-progress-bar" />
     }
