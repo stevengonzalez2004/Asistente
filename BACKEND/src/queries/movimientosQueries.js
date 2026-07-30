@@ -59,6 +59,7 @@ module.exports = {
         FROM cuentas
         WHERE TRIM(LOWER(nombre)) = TRIM(LOWER($1))
           AND usuario_id = $2
+          AND deleted_at IS NULL
         LIMIT 1;
     `,
 
