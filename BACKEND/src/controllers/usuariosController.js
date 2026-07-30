@@ -369,6 +369,8 @@ class UsuariosController {
             const resultado = await db.query('UPDATE usuarios SET nombre = $1 WHERE id = $2 RETURNING *', [nombre.trim(), idUsuario]);
             const u = resultado.rows[0];
 
+            await registrarAuditoria(req, { accion: 'PERFIL_ACTUALIZADO', entidad: 'usuarios', entidadId: idUsuario });
+
             res.status(200).json({
                 id: u.id,
                 nombre: u.nombre,
