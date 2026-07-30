@@ -86,7 +86,10 @@
     <section class="panel-section">
       <div class="section-title">
         <h2>Historial de movimientos</h2>
-        <button class="ghost-btn" type="button" (click)="cargarMovimientos()">Recargar</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="ghost-btn" type="button" (click)="exportarCsv()" title="Exportar historial a archivo CSV">Exportar CSV</button>
+          <button class="ghost-btn" type="button" (click)="cargarMovimientos()">Recargar</button>
+        </div>
       </div>
 
       <div class="table-wrap">

@@ -161,6 +161,35 @@ export class UserDashboard implements OnInit {
     this.limpiarAvisos();
   }
 
+  exportarCsv(): void {
+    const lista = this.movimientosFiltrados();
+    if (lista.length === 0) {
+      this.snackbar.error('No hay movimientos disponibles para exportar.');
+      return;
+    }
+
+    const encabezados = ['ID', 'Fecha', 'Tipo', 'Categoría', 'Monto', 'Descripción', 'Método Pago'];
+    const filas = lista.map((m) => [
+      m.id,
+      m.fecha ? new Date(m.fecha).toLocaleString('es-ES') : '',
+      m.tipo || '',
+      `"${(m.categoria || '').replace(/"/g, '""')}"`,
+      m.monto || 0,
+      `"${(m.descripcion || '').replace(/"/g, '""')}"`,
+      m.metodo_pago || '',
+    ]);
+
+    const contenidoCsv = [encabezados.join(','), ...filas.map((f) => f.join(','))].join('\n');
+    const blob = new Blob(['\ufeff' + contenidoCsv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `historial_movimientos_${new Date().toISOString().slice(0, 10)}.csv`;
+    enlace.click();
+    URL.revokeObjectURL(url);
+    this.snackbar.exito('Historial exportado a CSV correctamente.');
+  }
+
   crearCuenta(): void {
     if (this.cuentaForm.invalid) {
       this.cuentaForm.markAllAsTouched();
