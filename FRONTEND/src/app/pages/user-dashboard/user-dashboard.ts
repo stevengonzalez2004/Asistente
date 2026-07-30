@@ -4,8 +4,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
-import { Cuenta, Movimiento } from '../../core/models';
+import { CategoriaUsada, Cuenta, Movimiento, TendenciaMensual } from '../../core/models';
 import { SnackbarService } from '../../core/snackbar.service';
+import { ChartCard } from '../../shared/chart-card/chart-card';
+import { buildIngresosVsGastosOptions } from '../../shared/chart-card/chart-builders';
 import { Notice } from '../../shared/notice/notice';
 
 type UserSection = 'cuentas' | 'movimientos' | 'crear-cuenta' | 'nuevo-movimiento';
@@ -13,7 +15,7 @@ type TipoMovimiento = 'INGRESO' | 'GASTO' | 'TRANSFERENCIA';
 
 @Component({
   selector: 'app-user-dashboard',
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, DecimalPipe, Notice],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, DecimalPipe, Notice, ChartCard],
   templateUrl: './user-dashboard.html',
   styleUrl: './user-dashboard.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +53,33 @@ export class UserDashboard implements OnInit {
         m.tipo?.toLowerCase().includes(q)
     );
   });
+
+  readonly tendenciaMensual = computed<TendenciaMensual[]>(() => {
+    const mapa = new Map<string, { ingresos: number; gastos: number }>();
+
+    this.movimientos().forEach((m) => {
+      if (!m.fecha) return;
+      const mesIso = m.fecha.slice(0, 7) + '-01';
+      if (!mapa.has(mesIso)) {
+        mapa.set(mesIso, { ingresos: 0, gastos: 0 });
+      }
+      const item = mapa.get(mesIso)!;
+      const monto = Number(m.monto || 0);
+      if (m.tipo === 'INGRESO') item.ingresos += monto;
+      if (m.tipo === 'GASTO') item.gastos += monto;
+    });
+
+    const llaves = Array.from(mapa.keys()).sort();
+    return llaves.map((mes) => ({
+      mes,
+      ingresos: mapa.get(mes)!.ingresos,
+      gastos: mapa.get(mes)!.gastos,
+    }));
+  });
+
+  readonly ingresosVsGastosOptions = computed(() =>
+    buildIngresosVsGastosOptions(this.tendenciaMensual())
+  );
 
   readonly cuentaForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],

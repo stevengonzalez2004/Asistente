@@ -39,6 +39,17 @@
     </article>
   </section>
 
+  @if (tendenciaMensual().length > 0) {
+    <section style="margin-bottom: 24px;">
+      <app-chart-card
+        titulo="Comparativa Mensual (Ingresos vs Gastos)"
+        icon="bar_chart"
+        [options]="ingresosVsGastosOptions()"
+        [loading]="cargando()"
+      />
+    </section>
+  }
+
   @if (seccionActiva() === 'cuentas') {
     <section class="panel-section">
       <div class="section-title">
