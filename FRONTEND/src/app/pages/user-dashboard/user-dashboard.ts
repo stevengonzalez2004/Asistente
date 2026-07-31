@@ -287,4 +287,9 @@ export class UserDashboard implements OnInit {
   saldoCuenta(cuenta: Cuenta): number {
     return Number(cuenta.saldo_actual || 0);
   }
+
+  esSaldoBajo(cuenta: Cuenta): boolean {
+    const saldo = this.saldoCuenta(cuenta);
+    return saldo >= 0 && saldo < 10;
+  }
 }

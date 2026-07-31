@@ -70,8 +70,11 @@
       } @else {
         <div class="accounts-grid">
           @for (cuenta of cuentas(); track cuenta.nombre) {
-            <article class="account-card">
-              <span>{{ cuenta.nombre }}</span>
+            <article class="account-card" [class.low-balance-card]="esSaldoBajo(cuenta)">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>{{ cuenta.nombre }}</span>
+                <span *ngIf="esSaldoBajo(cuenta)" class="badge-low-balance" title="Saldo crítico menor a $10.00 USD">Saldo Bajo</span>
+              </div>
               <strong [class.negative]="saldoCuenta(cuenta) < 0">${{ saldoCuenta(cuenta) | number: '1.2-2' }}</strong>
             </article>
           } @empty {
