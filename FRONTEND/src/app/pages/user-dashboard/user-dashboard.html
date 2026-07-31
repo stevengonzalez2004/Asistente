@@ -95,6 +95,12 @@
         </div>
       </div>
 
+      <div class="preset-filter-group" style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button type="button" class="preset-btn" [class.active]="filtroPresetFecha() === 'todo'" (click)="filtroPresetFecha.set('todo')">Todo</button>
+        <button type="button" class="preset-btn" [class.active]="filtroPresetFecha() === 'mes'" (click)="filtroPresetFecha.set('mes')">Este Mes</button>
+        <button type="button" class="preset-btn" [class.active]="filtroPresetFecha() === 'semana'" (click)="filtroPresetFecha.set('semana')">Esta Semana</button>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>

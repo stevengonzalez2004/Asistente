@@ -38,6 +38,7 @@ export class UserDashboard implements OnInit {
 
   readonly busquedaControl = this.fb.control('');
   readonly filtroBusqueda = signal('');
+  readonly filtroPresetFecha = signal<'todo' | 'mes' | 'semana'>('todo');
 
   readonly totalCuentas = computed(() => this.cuentas().length);
   readonly totalMovimientos = computed(() => this.movimientos().length);
@@ -45,13 +46,32 @@ export class UserDashboard implements OnInit {
 
   readonly movimientosFiltrados = computed(() => {
     const q = this.filtroBusqueda().toLowerCase().trim();
-    if (!q) return this.movimientos();
-    return this.movimientos().filter(
-      (m) =>
-        m.categoria?.toLowerCase().includes(q) ||
-        m.descripcion?.toLowerCase().includes(q) ||
-        m.tipo?.toLowerCase().includes(q)
-    );
+    const preset = this.filtroPresetFecha();
+    const ahora = new Date();
+
+    return this.movimientos().filter((m) => {
+      if (q) {
+        const coincideTexto =
+          m.categoria?.toLowerCase().includes(q) ||
+          m.descripcion?.toLowerCase().includes(q) ||
+          m.tipo?.toLowerCase().includes(q);
+        if (!coincideTexto) return false;
+      }
+
+      if (preset === 'mes' && m.fecha) {
+        const f = new Date(m.fecha);
+        if (f.getMonth() !== ahora.getMonth() || f.getFullYear() !== ahora.getFullYear()) {
+          return false;
+        }
+      } else if (preset === 'semana' && m.fecha) {
+        const f = new Date(m.fecha);
+        const diffTiempo = Math.abs(ahora.getTime() - f.getTime());
+        const diffDias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24));
+        if (diffDias > 7) return false;
+      }
+
+      return true;
+    });
   });
 
   readonly tendenciaMensual = computed<TendenciaMensual[]>(() => {
