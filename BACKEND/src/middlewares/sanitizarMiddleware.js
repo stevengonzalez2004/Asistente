@@ -8,7 +8,10 @@
 const xss = require('xss');
 
 function sanitizarProfundo(valor) {
-    if (typeof valor === 'string') return xss(valor);
+    if (typeof valor === 'string') {
+        const limpio = xss(valor);
+        return limpio.replace(/javascript\s*:/gi, '').replace(/vbscript\s*:/gi, '');
+    }
     if (Array.isArray(valor)) return valor.map(sanitizarProfundo);
     if (valor && typeof valor === 'object') {
         for (const clave of Object.keys(valor)) {
@@ -21,7 +24,7 @@ function sanitizarProfundo(valor) {
 
 function sanitizarMiddleware(req, res, next) {
     if (req.body) req.body = sanitizarProfundo(req.body);
-    if (req.query) sanitizarProfundo(req.query);
+    if (req.query) req.query = sanitizarProfundo(req.query);
     if (req.params) req.params = sanitizarProfundo(req.params);
     next();
 }
