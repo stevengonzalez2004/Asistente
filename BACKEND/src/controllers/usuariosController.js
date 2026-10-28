@@ -4,6 +4,7 @@ const movimientosModel = require('../models/movimientosModel');
 const logger = require('../utils/logger');
 const db = require('../config/db');
 const { mapUsuario, mapUsuarios } = require('../dtos/usuarioDto');
+const { registrarAuditoria } = require('../utils/auditoria');
 function formatUtcIso(val) {
     if (!val) return null;
     if (val instanceof Date) {
