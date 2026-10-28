@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://asistente-financiero-backend-12wx.onrender.com/api'
+  apiBaseUrl: 'https://asistente-drab-one.vercel.app/api'
 };
