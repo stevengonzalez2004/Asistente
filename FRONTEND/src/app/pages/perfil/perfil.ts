@@ -170,7 +170,7 @@ export class Perfil implements OnInit {
   }
 
   vincularConGoogleOAuthDirecto(): void {
-    const clientId = '94382187078-los2gff6ktv0r9bhv89jn3eice20g9s0.apps.googleusercontent.com';
+    const clientId = '741537347847-ajn3tatnj5np2s3jg4cb2kov0ousitf2.apps.googleusercontent.com';
     const redirectUri = window.location.origin + '/perfil';
     const scope = 'openid email profile';
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${encodeURIComponent(scope)}&nonce=${Date.now()}`;
@@ -213,7 +213,7 @@ export class Perfil implements OnInit {
     const windowGoogle = (window as unknown as { google?: any }).google;
     if (windowGoogle?.accounts?.id) {
       windowGoogle.accounts.id.initialize({
-        client_id: '94382187078-los2gff6ktv0r9bhv89jn3eice20g9s0.apps.googleusercontent.com',
+        client_id: '741537347847-ajn3tatnj5np2s3jg4cb2kov0ousitf2.apps.googleusercontent.com',
         ux_mode: 'popup',
         callback: (res: { credential: string }) => {
           this.ngZone.run(() => this.procesarGoogleVinculoCredential(res.credential));
@@ -240,7 +240,7 @@ export class Perfil implements OnInit {
     const windowGoogle = (window as unknown as { google?: any }).google;
     if (windowGoogle?.accounts?.id) {
       windowGoogle.accounts.id.initialize({
-        client_id: '94382187078-los2gff6ktv0r9bhv89jn3eice20g9s0.apps.googleusercontent.com',
+        client_id: '741537347847-ajn3tatnj5np2s3jg4cb2kov0ousitf2.apps.googleusercontent.com',
         ux_mode: 'popup',
         callback: (res: { credential: string }) => {
           this.ngZone.run(() => this.procesarGoogleVinculoCredential(res.credential));
