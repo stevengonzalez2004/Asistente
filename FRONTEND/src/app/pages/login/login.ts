@@ -19,7 +19,7 @@ export class Login implements OnInit {
   private readonly router = inject(Router);
   private readonly ngZone = inject(NgZone);
 
-  private readonly googleClientId = '94382187078-los2gff6ktv0r9bhv89jn3eice20g9s0.apps.googleusercontent.com';
+  private readonly googleClientId = '741537347847-ajn3tatnj5np2s3jg4cb2kov0ousitf2.apps.googleusercontent.com';
 
   readonly cargando = signal(false);
   readonly error = signal('');
