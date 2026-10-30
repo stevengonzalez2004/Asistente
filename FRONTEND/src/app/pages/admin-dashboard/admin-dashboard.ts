@@ -738,6 +738,11 @@ export class AdminDashboard implements OnInit {
           next: () => {
             this.snackbar.exito('Movimiento actualizado.');
             this.cargarMovimientosGlobal();
+            this.cargarUsuarios();
+            if (this.usuarioSeleccionado()?.id === mov.usuario_id) {
+              this.cargarBalanceUsuario(mov.usuario_id);
+              this.cargarMovimientos(mov.usuario_id);
+            }
           },
           error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo actualizar el movimiento.'),
         });
@@ -761,6 +766,11 @@ export class AdminDashboard implements OnInit {
           next: () => {
             this.snackbar.exito('Movimiento duplicado correctamente.');
             this.cargarMovimientosGlobal();
+            this.cargarUsuarios();
+            if (this.usuarioSeleccionado()?.id === mov.usuario_id) {
+              this.cargarBalanceUsuario(mov.usuario_id);
+              this.cargarMovimientos(mov.usuario_id);
+            }
           },
           error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo duplicar el movimiento.'),
         });
@@ -784,6 +794,11 @@ export class AdminDashboard implements OnInit {
           next: () => {
             this.snackbar.exito('Movimiento eliminado.');
             this.cargarMovimientosGlobal();
+            this.cargarUsuarios();
+            if (this.usuarioSeleccionado()?.id === mov.usuario_id) {
+              this.cargarBalanceUsuario(mov.usuario_id);
+              this.cargarMovimientos(mov.usuario_id);
+            }
           },
           error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo eliminar el movimiento.'),
         });
@@ -1050,6 +1065,11 @@ export class AdminDashboard implements OnInit {
           ...balances,
           [usuarioId]: balance,
         }));
+        if (balance && balance.balance_total !== undefined) {
+          this.usuarios.update((lista) =>
+            lista.map((u) => (u.id === usuarioId ? { ...u, balance_total: balance.balance_total } : u))
+          );
+        }
       },
       error: (err) => this.error.set(err?.error?.message || 'No se pudieron cargar las cuentas del usuario.'),
     });
@@ -1082,6 +1102,7 @@ export class AdminDashboard implements OnInit {
         this.movimientoEditando.set(null);
         this.cargarMovimientos(usuario.id);
         this.cargarBalanceUsuario(usuario.id);
+        this.cargarUsuarios();
       },
       error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo actualizar el movimiento.'),
     });
@@ -1096,6 +1117,7 @@ export class AdminDashboard implements OnInit {
         this.snackbar.exito('Movimiento eliminado.');
         this.movimientos.update((movimientos) => movimientos.filter((item) => item.id !== movimiento.id));
         this.cargarBalanceUsuario(usuario.id);
+         this.cargarUsuarios();
       },
       error: (err) => this.snackbar.error(err?.error?.message || 'No se pudo eliminar el movimiento.'),
     });
