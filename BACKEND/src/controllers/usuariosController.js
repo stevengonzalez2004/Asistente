@@ -418,7 +418,7 @@ class UsuariosController {
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(nuevaPassword, salt);
 
-            await db.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [hash, idUsuario]);
+            await db.query('UPDATE usuarios SET password = $1 WHERE id = $2', [hash, idUsuario]);
             res.status(200).json({ success: true, message: 'Contraseña actualizada correctamente' });
         } catch (error) {
             logger.error('Error al cambiar contraseña:', error);
