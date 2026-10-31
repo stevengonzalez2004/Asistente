@@ -222,7 +222,7 @@ class MovimientosController {
         try {
             const movimientoId = parseInt(req.params.id);
 
-            const resultado = await movimientosModel.eliminarMovimientoWeb(movimientoId);
+            const resultado = await movimientosModel.eliminarMovimientoWeb(movimientoId, req.usuario.id);
 
             logger.info(`Movimiento ${movimientoId} eliminado por usuario ${req.usuario.id}.`);
             return res.status(200).json({
@@ -232,6 +232,9 @@ class MovimientosController {
 
         } catch (error) {
             logger.error(`Error en eliminarWeb (Movimiento ID: ${req.params.id}):`, error);
+            if (error.status === 404) {
+                return res.status(404).json({ success: false, message: error.message });
+            }
             next(error);
         }
     }
