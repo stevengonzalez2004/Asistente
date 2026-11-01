@@ -11,10 +11,10 @@ const asyncHandler = require('../utils/asyncHandler');
 // RUTAS PARA EL BOT DE TELEGRAM (Internas)
 // ==========================================
 // Estas rutas asumen que el ID de Telegram viene en el body o parámetros.
-router.get('/telegram/hoy', asyncHandler(reportesController.hoy));
-router.get('/telegram/mes', asyncHandler(reportesController.mes));
-router.get('/telegram/balance', asyncHandler(reportesController.balance));
-router.get('/telegram/categorias', asyncHandler(reportesController.categorias));
+router.get('/telegram/hoy', verificarToken, asyncHandler(reportesController.hoy));
+router.get('/telegram/mes', verificarToken, asyncHandler(reportesController.mes));
+router.get('/telegram/balance', verificarToken, asyncHandler(reportesController.balance));
+router.get('/telegram/categorias', verificarToken, asyncHandler(reportesController.categorias));
 
 // ==========================================
 // RUTAS PARA LA WEB / ANGULAR (Protegidas)
