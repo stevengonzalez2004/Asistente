@@ -16,7 +16,9 @@ class ReportesController {
     try {
       const telegramId = req.query.telegram_id || req.headers['x-telegram-id'];
       if (!telegramId) return res.status(400).json({ success: false, message: 'El parámetro telegram_id es requerido.' });
-
+      if (req.usuario && req.usuario.rol !== 'ADMINISTRADOR' && String(req.usuario.telegram_id || '') !== String(telegramId)) {
+  return res.status(403).json({ success: false, message: 'No tienes permiso para consultar reportes de otro usuario.' });
+}
       const result = await reportesService.obtenerBalance(telegramId);
       return res.status(200).json(result);
     } catch (error) {
@@ -33,7 +35,9 @@ class ReportesController {
     try {
       const telegramId = req.query.telegram_id || req.headers['x-telegram-id'];
       if (!telegramId) return res.status(400).json({ success: false, message: 'El parámetro telegram_id es requerido.' });
-
+      if (req.usuario && req.usuario.rol !== 'ADMINISTRADOR' && String(req.usuario.telegram_id || '') !== String(telegramId)) {
+  return res.status(403).json({ success: false, message: 'No tienes permiso para consultar reportes de otro usuario.' });
+}
       const result = await reportesService.obtenerReporteHoy(telegramId);
       return res.status(200).json(result);
     } catch (error) {
@@ -50,7 +54,9 @@ class ReportesController {
     try {
       const telegramId = req.query.telegram_id || req.headers['x-telegram-id'];
       if (!telegramId) return res.status(400).json({ success: false, message: 'El parámetro telegram_id es requerido.' });
-
+      if (req.usuario && req.usuario.rol !== 'ADMINISTRADOR' && String(req.usuario.telegram_id || '') !== String(telegramId)) {
+  return res.status(403).json({ success: false, message: 'No tienes permiso para consultar reportes de otro usuario.' });
+}
       const result = await reportesService.obtenerReporteMes(telegramId);
       return res.status(200).json(result);
     } catch (error) {
@@ -67,7 +73,9 @@ class ReportesController {
     try {
       const telegramId = req.query.telegram_id || req.headers['x-telegram-id'];
       if (!telegramId) return res.status(400).json({ success: false, message: 'El parámetro telegram_id es requerido.' });
-
+      if (req.usuario && req.usuario.rol !== 'ADMINISTRADOR' && String(req.usuario.telegram_id || '') !== String(telegramId)) {
+  return res.status(403).json({ success: false, message: 'No tienes permiso para consultar reportes de otro usuario.' });
+}
       const result = await reportesService.obtenerReporteCategorias(telegramId);
       return res.status(200).json(result);
     } catch (error) {
