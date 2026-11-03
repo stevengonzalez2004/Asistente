@@ -91,12 +91,18 @@ class MovimientosModel {
                 const nombreNormalizado = String(nombreCuenta || '').trim();
                 if (!nombreNormalizado) return null;
 
-                // BLOQUEO DE CONCURRENCIA (DEF-05 Corregido)
+                // 1. CANDADO DE CONCURRENCIA: Bloquea la fila solo para esta transacción
                 let cuentaRes = await client.query(
                     'SELECT * FROM cuentas WHERE nombre = $1 AND usuario_id = $2 AND deleted_at IS NULL FOR UPDATE', 
                     [nombreNormalizado, usuario_id]
                 );
 
+                if (cuentaRes.rows.length === 0) {
+                    cuentaRes = await client.query(
+                        movimientosQueries.CREAR_CUENTA, 
+                        [nombreNormalizado, usuario_id]
+                    );
+                }
                 return cuentaRes.rows[0];
             };
 
@@ -111,6 +117,18 @@ class MovimientosModel {
                 throw new Error('La cuenta origen y destino son obligatorias para transferencias.');
             }
 
+            // 2. VALIDACIÓN ESTRICTA DENTRO DEL CANDADO (Cierra el DEF-05)
+            if (tipoNormalizado === 'GASTO' || tipoNormalizado === 'TRANSFERENCIA') {
+                const saldoActual = parseFloat(cuentaOrigen.saldo_actual || 0);
+                if (saldoActual < montoNumero) {
+                    await client.query('ROLLBACK');
+                    return {
+                        status: 'SALDO_INSUFICIENTE',
+                        faltante: montoNumero - saldoActual,
+                        cuenta: cuentaOrigen.nombre
+                    };
+                }
+            }
             const movimientoRes = await client.query(movimientosQueries.INSERTAR_MOVIMIENTO, [
                 usuario_id,
                 tipoRes.rows[0].id,
