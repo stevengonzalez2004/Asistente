@@ -91,17 +91,11 @@ class MovimientosModel {
                 const nombreNormalizado = String(nombreCuenta || '').trim();
                 if (!nombreNormalizado) return null;
 
+                // BLOQUEO DE CONCURRENCIA (DEF-05 Corregido)
                 let cuentaRes = await client.query(
-                    movimientosQueries.OBTENER_CUENTA_POR_NOMBRE, 
+                    'SELECT * FROM cuentas WHERE nombre = $1 AND usuario_id = $2 AND deleted_at IS NULL FOR UPDATE', 
                     [nombreNormalizado, usuario_id]
                 );
-
-                if (cuentaRes.rows.length === 0) {
-                    cuentaRes = await client.query(
-                        movimientosQueries.CREAR_CUENTA, 
-                        [nombreNormalizado, usuario_id]
-                    );
-                }
 
                 return cuentaRes.rows[0];
             };
