@@ -255,6 +255,7 @@ class MovimientosController {
             const usuarioId = req.usuario.id;
             const { page, limit } = req.query;
 
+            // Mantiene comportamiento por defecto si no vienen parámetros
             if (page === undefined && limit === undefined) {
                 const historial = await movimientosModel.obtenerHistorial(usuarioId);
                 return res.status(200).json({
@@ -263,10 +264,19 @@ class MovimientosController {
                 });
             }
 
+            
+            let pageInt = parseInt(page, 10);
+            let limitInt = parseInt(limit, 10);
+
+            if (isNaN(pageInt) || pageInt < 1) pageInt = 1;
+            if (isNaN(limitInt) || limitInt < 1) limitInt = 100; // Límite por defecto
+            if (limitInt > 100) limitInt = 100; // Evita saturar la BD (Tope superior sanitizado)
+            
+
             const resultado = await movimientosModel.obtenerHistorialPaginado({
                 usuarioId,
-                page: parseInt(page) || 1,
-                limit: Math.min(parseInt(limit) || 100, 100),
+                page: pageInt,       // Usas las variables sanitizadas
+                limit: limitInt,     // Usas las variables sanitizadas
             });
 
             return res.status(200).json({
@@ -293,9 +303,17 @@ class MovimientosController {
             const { page = 1, limit = 20, sortBy = 'fecha', sortDir = 'desc' } = req.query;
             const filtros = resolverFiltrosMovimientosGlobal(req.query);
 
+           
+            let pageInt = parseInt(page, 10);
+            let limitInt = parseInt(limit, 10);
+
+            if (isNaN(pageInt) || pageInt < 1) pageInt = 1;
+            if (isNaN(limitInt) || limitInt < 1) limitInt = 20; // 20 es el defecto de este método
+            if (limitInt > 100) limitInt = 100; // Evita saturar la BD
+
             const resultado = await movimientosModel.listarMovimientosGlobalPaginado({
-                page: parseInt(page) || 1,
-                limit: Math.min(parseInt(limit) || 20, 100),
+                page: pageInt,       // Usas las variables sanitizadas
+                limit: limitInt,     // Usas las variables sanitizadas
                 sortBy, sortDir,
                 ...filtros,
             });
