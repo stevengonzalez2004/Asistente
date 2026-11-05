@@ -68,7 +68,7 @@ class MovimientosController {
         success: false,
         message: 'El monto debe ser mayor a 0 y tener máximo 2 decimales.'
     });
-
+}
             const result = await movimientosService.registrarMovimiento({
                 usuario_id: usuarioId,
                 telegram_id,
