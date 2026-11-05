@@ -63,6 +63,11 @@ class MovimientosController {
                     message: 'Los campos tipo y monto son obligatorios.'
                 });
             }
+            if (!/^\d+(\.\d{1,2})?$/.test(String(monto)) || Number(monto) <= 0) {
+    return res.status(400).json({
+        success: false,
+        message: 'El monto debe ser mayor a 0 y tener máximo 2 decimales.'
+    });
 
             const result = await movimientosService.registrarMovimiento({
                 usuario_id: usuarioId,
