@@ -8,19 +8,23 @@ const { param, body } = require('express-validator');
 
 /** Reproduce `if (!parseInt(id) || isNaN(parseInt(id)))` con el mensaje propio de este modulo. */
 function idMovimientoValido() {
-    return param('id').custom((valor) => {
-        const parseado = parseInt(valor, 10);
-        if (!parseado || isNaN(parseado)) {
-            throw new Error('ID de movimiento inválido.');
-        }
-        return true;
-    });
+    return param('id')
+        .matches(/^[1-9]\d*$/)
+        .withMessage('ID de movimiento inválido. Debe ser un número positivo.');
 }
 
-/** Reproduce `if (!monto || isNaN(monto) || parseFloat(monto) <= 0)` de editarWeb. */
+/** 
+ * CORRECCIÓN DEF-09 (COR-09): 
+ * Además de verificar que sea mayor a 0, se añade Number.isFinite() y la cota máxima 
+ * de 1,000,000,000.00 para impedir desbordamientos del tipo NUMERIC(15,2) en PostgreSQL.
+ */
 const validarMontoEdicion = body('monto').custom((valor) => {
-    if (!valor || isNaN(valor) || parseFloat(valor) <= 0) {
+    const montoFloat = parseFloat(valor);
+    if (!valor || isNaN(valor) || montoFloat <= 0) {
         throw new Error('El monto a editar debe ser un número mayor a 0.');
+    }
+    if (!Number.isFinite(montoFloat) || montoFloat > 1000000000) {
+        throw new Error('El monto no puede superar $1,000,000,000.00 ni ser infinito.');
     }
     return true;
 });
